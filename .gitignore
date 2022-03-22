@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/facetrack-d
+facetrack-d.so
+facetrack-d.dylib
+facetrack-d.dll
+facetrack-d.a
+facetrack-d.lib
+facetrack-d-test-*
+*.exe
+*.o
+*.obj
+*.lst
