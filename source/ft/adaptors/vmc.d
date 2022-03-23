@@ -62,6 +62,7 @@ public:
                     );
                     break;
                 case "/Blend":
+                    if (msg.addressPattern[3].toString == "/Apply") break;
                     this.blendshapes[msg.arg!string(0)] = msg.arg!float(1);
                     break;
                 default: break;
