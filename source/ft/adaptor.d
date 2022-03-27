@@ -11,6 +11,7 @@ public:
     abstract void stop();
     abstract void poll();
     abstract string[] getOptionNames();
+    abstract bool isRunning();
 
     final
     ref float[string] getBlendshapes() { return blendshapes; }

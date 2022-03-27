@@ -165,10 +165,6 @@ private:
     Thread sendingThread;
     Thread listeningThread;
 
-    bool isRunning() {
-        return vtsOut !is null;
-    }
-
     void listenThread() {
         ubyte[ushort.max] buff;
         Address addr = new InternetAddress(InternetAddress.ADDR_ANY, 0);
@@ -290,6 +286,11 @@ public:
             // Duplicate blendshapes in
             this.blendshapes = data.blendShapesDict.dup;
         }
+    }
+
+    override
+    bool isRunning() {
+        return vtsOut !is null;
     }
 
     override

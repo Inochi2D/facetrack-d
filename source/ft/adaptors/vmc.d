@@ -28,6 +28,11 @@ public:
     }
 
     override
+    bool isRunning() {
+        return server !is null;
+    }
+
+    override
     void stop() {
         server.close();
         server = null;
