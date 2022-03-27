@@ -101,40 +101,34 @@ struct VTSRawTrackingData {
 /**
     Thread-safe queue for VTS tracking data
 */
-struct VTSDataQueue {
+struct VTSThreadSafeData {
 private:
-    VTSRawTrackingData[] queue;
+    VTSRawTrackingData data;
     Mutex mtx;
+    bool updated_;
 
 public:
     this(Mutex mutex) {
         this.mtx = mutex;
     }
 
-    void push(VTSRawTrackingData data) {
+    bool updated() {
         mtx.lock();
-        queue ~= data;
+        scope(exit) mtx.unlock();
+        return updated_;
+    }
+
+    void set(VTSRawTrackingData data) {
+        mtx.lock();
+        updated_ = true;
+        this.data = data;
         mtx.unlock();
     }
 
-    size_t length() {
+    VTSRawTrackingData get() {
         mtx.lock();
-        size_t len = queue.length;
-        mtx.unlock();
-
-        return len;
-    }
-
-    VTSRawTrackingData pop() {
-        VTSRawTrackingData data;
-
-        mtx.lock();
-        if (queue.length > 0) {
-            data = queue[0];
-            queue.length--;
-        } else data = VTSRawTrackingData.init;
-        mtx.unlock();
-
+        updated_ = false;
+        scope(exit) mtx.unlock();
         return data;
     }
 }
@@ -156,7 +150,7 @@ private:
     // Data
     size_t dataPacketsReceivedTotal;
     size_t dataPacketsReceivedInLastSecond;
-    VTSDataQueue* queue;
+    VTSThreadSafeData tsdata;
 
     // Settings
     string appName = "facetrack-d";
@@ -182,8 +176,7 @@ private:
         while (!isCloseRequested) {
             try {
                 ptrdiff_t recvBytes = vtsIn.receiveFrom(buff, SocketFlags.NONE, addr);
-
-                if (recvBytes <= buff.length) {
+                if (recvBytes != Socket.ERROR && recvBytes <= buff.length) {
                     string recvString = cast(string)buff[0..recvBytes];
                     auto trackingData = deserialize!VTSRawTrackingData(parseJson(recvString));
 
@@ -192,8 +185,7 @@ private:
                         trackingData.blendShapesDict[blendshapeKV.key] = blendshapeKV.value;
                     }
 
-                    queue.push(trackingData);
-                    Thread.sleep(16.msecs);
+                    tsdata.set(trackingData);
                 }
             } catch (Exception ex) {
                 Thread.sleep(100.msecs);
@@ -242,13 +234,12 @@ public:
 
         // Start our new threading
         isCloseRequested = false;
-        queue = new VTSDataQueue(new Mutex());
+        tsdata = VTSThreadSafeData(new Mutex());
 
         vtsOut = new UdpSocket();
-        vtsOut.blocking = false;
-
+        vtsOut.setOption(SocketOptionLevel.SOCKET, SocketOption.SNDTIMEO, 16.msecs);
         vtsIn = new UdpSocket();
-        vtsIn.blocking = false;
+        vtsIn.setOption(SocketOptionLevel.SOCKET, SocketOption.RCVTIMEO, 16.msecs);
         vtsIn.bind(new InternetAddress(vtsBind, vtsPort));
         
         // Reset PPS counter
@@ -283,14 +274,13 @@ public:
             listeningThread = null;
             vtsIn = null;
             vtsOut = null;
-            queue = null;
         }
     }
 
     override
     void poll() {
-        if (queue.length > 0) {
-            VTSRawTrackingData data = queue.pop();
+        if (tsdata.updated) {
+            VTSRawTrackingData data = tsdata.get();
 
             bones[BoneNames.ftHead] = Bone(
                 vec3(data.position.x*-1, data.position.y, data.position.z),
@@ -305,6 +295,7 @@ public:
     override
     string[] getOptionNames() {
         return [
+            "phoneIP",
             "appName"
         ];
     }
