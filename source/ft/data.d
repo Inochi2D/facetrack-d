@@ -137,7 +137,10 @@ enum BoneNames {
     vmcRightLittleProximal = "RightLittleProximal",
     vmcRightLittleIntermediate = "RightLittleIntermediate",
     vmcRightLittleDistal = "RightLittleDistal",
-    vmcLastBone = "LastBone"
+    vmcLastBone = "LastBone",
+
+
+    ftHead = "Head"
 }
 
 struct Bone {

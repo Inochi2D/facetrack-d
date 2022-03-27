@@ -7,7 +7,7 @@ A library for interfacing with face tracking systems.
 
 ## Supported Adaptors
  - VMC
+ - VTubeStudio protocol
 
 ## Adaptors to be supported
  - OpenSeeFace
- - VTubeStudio protocol
