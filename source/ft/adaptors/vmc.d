@@ -34,8 +34,10 @@ public:
 
     override
     void stop() {
-        server.close();
-        server = null;
+        if (server) {
+            server.close();
+            server = null;
+        }
     }
 
     override
