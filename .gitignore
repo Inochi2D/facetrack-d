@@ -13,3 +13,5 @@ facetrack-d-test-*
 *.o
 *.obj
 *.lst
+*.a
+dub.selections.json
