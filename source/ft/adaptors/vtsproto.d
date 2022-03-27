@@ -293,7 +293,7 @@ public:
             VTSRawTrackingData data = queue.pop();
 
             bones[BoneNames.ftHead] = Bone(
-                data.position.vec, 
+                vec3(data.position.x*-1, data.position.y, data.position.z),
                 quat.euler_rotation(radians(data.rotation.y), radians(data.rotation.x), radians(data.rotation.z))
             );
 
