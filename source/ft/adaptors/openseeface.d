@@ -1,5 +1,4 @@
 module ft.adaptors.openseeface;
-
 import ft.adaptor;
 import ft.data;
 
@@ -8,6 +7,8 @@ import std.conv : to;
 import std.range.primitives;
 import std.bitmanip;
 import gl3n.linalg;
+import core.thread;
+import core.sync.mutex;
 
 const ushort trackingPoints = 68;
 const ushort packetFrameSize = 8
@@ -24,7 +25,7 @@ const ushort packetFrameSize = 8
     + 4 * 2 * 70
     + 4 * 14;
 
-struct OpenSeeFaceData {
+struct OSFData {
     double time;
     int32_t id;
     vec2 cameraResolution;
@@ -44,10 +45,10 @@ struct OpenSeeFaceData {
     vec2[trackingPoints] points;
     vec3[trackingPoints + 2] points3d;
 
-    OpenSeeFaceFeatures openSeeFaceFeatures;
+    OSFFeatures openSeeFaceFeatures;
 }
 
-struct OpenSeeFaceFeatures {
+struct OSFFeatures {
     float eyeLeft;
     float eyeRight;
 
@@ -69,13 +70,49 @@ struct OpenSeeFaceFeatures {
     float mouthWide;
 }
 
-class OpenSeeFaceAdaptor : Adaptor {
+struct OSFThreadSafeData {
 private:
-    Socket listener;
+    OSFData data;
+    Mutex mtx;
+    bool updated_;
+
+public:
+    this(Mutex mutex) {
+        this.mtx = mutex;
+    }
+
+    bool updated() {
+        mtx.lock();
+        scope(exit) mtx.unlock();
+        return updated_;
+    }
+
+    void set(OSFData data) {
+        mtx.lock();
+        updated_ = true;
+        this.data = data;
+        mtx.unlock();
+    }
+
+    OSFData get() {
+        mtx.lock();
+        updated_ = false;
+        scope(exit) mtx.unlock();
+        return data;
+    }
+}
+
+class OSFAdaptor : Adaptor {
+private:
     ushort port = 11573;
     string bind = "0.0.0.0";
 
     Socket osf;
+
+    bool isCloseRequested;
+    Thread receivingThread;
+
+    OSFThreadSafeData tsdata;
 
     bool readBool(ubyte[] b) {
         return b.read!bool();
@@ -105,7 +142,107 @@ private:
         return quat(readFloat(b), readFloat(b), readFloat(b), readFloat(b));
     }
 
+    void receiveThread() {
+        ubyte[packetFrameSize] bytes;
+        while (!isCloseRequested) {
+            try {
+                // Data must always match the expected amount of bytes
+                if (osf.receive(bytes) < packetFrameSize) {
+                    Thread.sleep(100.msecs);
+                    return;
+                }
+
+                OSFData data;
+                OSFFeatures features;
+
+                data.time = readDouble(bytes);
+                data.id = readInt(bytes);
+                data.cameraResolution = readVec2(bytes);
+
+                data.rightEyeOpen = readFloat(bytes);
+                data.leftEyeOpen = readFloat(bytes);
+
+                data.got3dPoints = readBool(bytes);
+                data.fit3dError = readFloat(bytes);
+
+                data.rawQuaternion = readQuat(bytes);
+                data.rawEuler = readVec3(bytes);
+                data.translation = readVec3(bytes);
+
+                for (int i = 0; i < trackingPoints; i++) {
+                    data.confidence[i] = readFloat(bytes);
+                }
+                for (int i = 0; i < trackingPoints; i++) {
+                    data.points[i] = readVec2(bytes);
+                }
+                for (int i = 0; i < trackingPoints + 2; i++) {
+                    data.points3d[i] = readVec3(bytes);
+                }
+
+                // TODO
+                // 0. This 100% won't compile
+                // 1. Figure out how to create the quat correctly, luckily we don't read any bytes here
+                // 2. Inner quat axis rotations might not need to be normalizd
+                // 
+                // From official C# impl
+                // rightGaze = Quaternion.LookRotation(swapX(points3D[66]) - swapX(points3D[68])) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(180, Vector3.forward);
+                // leftGaze = Quaternion.LookRotation(swapX(points3D[67]) - swapX(points3D[69])) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(180, Vector3.forward);
+                // data.rightGaze = quat.axis_rotation(
+                //     data.points3d[66] - data.points3d[68],
+                //     (
+                //         quat.axis_rotation(
+                //             180f, vec3(1f, 0f, 0f)
+                //         ).normalized()
+                //         *
+                //         quat.axis_rotation(
+                //             180f, vec3(1f, 0f, 1f)
+                //         ).normalized())
+                // ).normalized();
+                // data.leftGaze = quat.axis_rotation(
+                //     data.points3d[67] - data.points3d[69],
+                //     (
+                //         quat.axis_rotation(
+                //             180f, vec3(1f, 0f, 0f)
+                //         ).normalized()
+                //         *
+                //         quat.axis_rotation(
+                //             180f, vec3(1f, 0f, 1f)
+                //         ).normalized())
+                // ).normalized();
+
+                features.eyeLeft = readFloat(bytes);
+                features.eyeRight = readFloat(bytes);
+                
+                features.eyebrowSteepnessLeft = readFloat(bytes);
+                features.eyebrowUpDownLeft = readFloat(bytes);
+                features.eyebrowQuirkLeft = readFloat(bytes);
+
+                features.eyebrowSteepnessRight = readFloat(bytes);
+                features.eyebrowUpDownRight = readFloat(bytes);
+                features.eyebrowQuirkRight = readFloat(bytes);
+
+                features.mouthCornerUpDownLeft = readFloat(bytes);
+                features.mouthCornerInOutLeft = readFloat(bytes);
+                features.mouthCornerUpDownRight = readFloat(bytes);
+                features.mouthCornerInOutRight = readFloat(bytes);
+
+                features.mouthOpen = readFloat(bytes);
+                features.mouthWide = readFloat(bytes);
+
+                data.openSeeFaceFeatures = features;
+
+                tsdata.set(data);
+            } catch (Exception ex) {
+                Thread.sleep(100.msecs);
+            }
+        }
+    }
+
 public:
+    ~this() {
+        this.stop();
+    }
+
     override
     void start(string[string] options = string[string].init) {
         if ("port" in options) {
@@ -116,111 +253,47 @@ public:
             bind = options["address"];
         }
 
-        listener = new UdpSocket();
-        listener.bind(new InternetAddress(bind, port));
-        listener.listen(1);
+        if (isRunning) {
+            this.stop();
+        }
+
+        tsdata = OSFThreadSafeData(new Mutex());
         
-        osf = listener.accept();
+        osf = new UdpSocket();
+        osf.bind(new InternetAddress(bind, port));
+
+        if (osf.isAlive) {
+            receivingThread = new Thread(&receiveThread);
+            receivingThread.start();
+        }
     }
 
     override
     void stop() {
-        listener.close();
+        isCloseRequested = true;
+
+        receivingThread.join();
         osf.close();
 
-        listener = null;
+        receivingThread = null;
         osf = null;
     }
 
     override
     void poll() {
-        // ubyte[packetFrameSize] bytes;
-        ubyte[] bytes;
-        if (osf.receive(bytes) < 1 || bytes.length % packetFrameSize != 0) {
-            // TODO handle this?
-            return;
+        if (tsdata.updated) {
+            OSFData data = tsdata.get();
+
+            bones[BoneNames.ftHead] = Bone(
+                data.translation,
+                data.rawQuaternion
+            );
         }
+    }
 
-        OpenSeeFaceData data;
-        OpenSeeFaceFeatures features;
-
-        data.time = readDouble(bytes);
-        data.id = readInt(bytes);
-        data.cameraResolution = readVec2(bytes);
-
-        data.rightEyeOpen = readFloat(bytes);
-        data.leftEyeOpen = readFloat(bytes);
-
-        data.got3dPoints = readBool(bytes);
-        data.fit3dError = readFloat(bytes);
-
-        data.rawQuaternion = readQuat(bytes);
-        data.rawEuler = readVec3(bytes);
-        data.translation = readVec3(bytes);
-
-        for (int i = 0; i < trackingPoints; i++) {
-            data.confidence[i] = readFloat(bytes);
-        }
-        for (int i = 0; i < trackingPoints; i++) {
-            data.points[i] = readVec2(bytes);
-        }
-        for (int i = 0; i < trackingPoints + 2; i++) {
-            data.points3d[i] = readVec3(bytes);
-        }
-
-        // TODO
-        // 0. This 100% won't compile
-        // 1. Figure out how to create the quat correctly, luckily we don't read any bytes here
-        // 2. Inner quat axis rotations might not need to be normalizd
-        // 
-        // From official C# impl
-        // rightGaze = Quaternion.LookRotation(swapX(points3D[66]) - swapX(points3D[68])) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(180, Vector3.forward);
-        // leftGaze = Quaternion.LookRotation(swapX(points3D[67]) - swapX(points3D[69])) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(180, Vector3.forward);
-        // data.rightGaze = quat.axis_rotation(
-        //     data.points3d[66] - data.points3d[68],
-        //     (
-        //         quat.axis_rotation(
-        //             180f, vec3(1f, 0f, 0f)
-        //         ).normalized()
-        //         *
-        //         quat.axis_rotation(
-        //             180f, vec3(1f, 0f, 1f)
-        //         ).normalized())
-        // ).normalized();
-        // data.leftGaze = quat.axis_rotation(
-        //     data.points3d[67] - data.points3d[69],
-        //     (
-        //         quat.axis_rotation(
-        //             180f, vec3(1f, 0f, 0f)
-        //         ).normalized()
-        //         *
-        //         quat.axis_rotation(
-        //             180f, vec3(1f, 0f, 1f)
-        //         ).normalized())
-        // ).normalized();
-
-        features.eyeLeft = readFloat(bytes);
-        features.eyeRight = readFloat(bytes);
-        
-        features.eyebrowSteepnessLeft = readFloat(bytes);
-        features.eyebrowUpDownLeft = readFloat(bytes);
-        features.eyebrowQuirkLeft = readFloat(bytes);
-
-        features.eyebrowSteepnessRight = readFloat(bytes);
-        features.eyebrowUpDownRight = readFloat(bytes);
-        features.eyebrowQuirkRight = readFloat(bytes);
-
-        features.mouthCornerUpDownLeft = readFloat(bytes);
-        features.mouthCornerInOutLeft = readFloat(bytes);
-        features.mouthCornerUpDownRight = readFloat(bytes);
-        features.mouthCornerInOutRight = readFloat(bytes);
-
-        features.mouthOpen = readFloat(bytes);
-        features.mouthWide = readFloat(bytes);
-
-        data.openSeeFaceFeatures = features;
-
-        // TODO how to convert to bones?
+    override
+    bool isRunning() {
+        return osf !is null;
     }
 
     override
