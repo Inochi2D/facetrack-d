@@ -1,5 +1,5 @@
 module ft.data;
-import gl3n.linalg;
+import inmath.linalg;
 
 enum BlendshapeNames : string {
     eyeBlinkLeft = "eyeBlinkLeft",

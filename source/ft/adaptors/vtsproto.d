@@ -5,11 +5,11 @@ import std.conv : to;
 import std.socket;
 import fghj.serialization;
 import fghj;
-import gl3n.linalg;
+import inmath.linalg;
 import core.thread;
 import core.sync.mutex;
 import std.exception;
-import gl3n.math;
+import inmath.math;
 import std.stdio : writeln;
 
 struct VTSUDPDataRequest {

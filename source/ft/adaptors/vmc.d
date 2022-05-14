@@ -4,7 +4,7 @@ import ft.data;
 import osc;
 import std.conv : to;
 import std.socket;
-import gl3n.linalg;
+import inmath.linalg;
 
 class VMCAdaptor : Adaptor {
 private:
