@@ -111,29 +111,12 @@ private:
     Thread receivingThread;
 
     OSFThreadSafeData tsdata;
-/*
-    double readDouble(ubyte[] bytes) {
-        return bytes.read!(double, Endian.littleEndian)();
+
+    vec3 swapX(vec3 v) {
+        v.x = -v.x;
+        return v;
     }
-    float readFloat(ubyte[] bytes) {
-        return bytes.read!(float, Endian.littleEndian)();
-    }
-    int readInt(ubyte[] bytes) {
-        return bytes.read!(int, Endian.littleEndian)();
-    }
-    bool readBool(ubyte[] bytes) {
-        return bytes.read!(bool, Endian.littleEndian)();
-    }
-    vec2 readVec2(ubyte[] bytes) {
-        return vec2(read!(float, Endian.littleEndian)(bytes), read!(float, Endian.littleEndian)(bytes));
-    }
-    vec3 readVec3(ubyte[] bytes) {
-        return vec3(read!(float, Endian.littleEndian)(bytes), read!(float, Endian.littleEndian)(bytes), read!(float, Endian.littleEndian)(bytes));
-    }
-    quat readQuat(ubyte[] bytes) {
-        return quat(read!(float, Endian.littleEndian)(bytes), read!(float, Endian.littleEndian)(bytes), read!(float, Endian.littleEndian)(bytes), read!(float, Endian.littleEndian)(bytes));
-    }
-*/
+
     void receiveThread() {
         ubyte[packetFrameSize] buffer;
         while (!isCloseRequested) {
@@ -141,7 +124,6 @@ private:
                 // Data must always match the expected amount of bytes
                 long recvBytes = osf.receive(buffer);
                 ubyte[] bytes = buffer;
-//                debug writeln(format("Received bytes = %d, expected %d bytes", recvBytes, packetFrameSize));
                 if (recvBytes < packetFrameSize) {
                     writeln("Buffer shorted.");
                     Thread.sleep(100.msecs);
@@ -164,61 +146,21 @@ private:
                 data.rawEuler = vec3(bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)());
                 data.translation = vec3(bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)());
 
-//                debug writeln(format("left %d bytes, read: %d bytes", bytes.length, recvBytes - bytes.length));
-
                 for (int i = 0; i < trackingPoints; i++) {
                     data.confidence[i] = bytes.read!(float, Endian.littleEndian)();
                 }
-//                debug writeln(format("left %d bytes, read: %d bytes", bytes.length, recvBytes - bytes.length));
                 for (int i = 0; i < trackingPoints; i++) {
                     data.points[i] = vec2(bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)());
                 }
-//                debug writeln(format("left %d bytes, read: %d bytes", bytes.length, recvBytes - bytes.length));
                 for (int i = 0; i < trackingPoints + 2; i++) {
                     data.points3d[i] = vec3(bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)());
                 }
-//                debug writeln(format("left %d bytes, read: %d bytes", bytes.length, recvBytes - bytes.length));
 
-                // TODO
-                // 0. This 100% won't compile
-                // 1. Figure out how to create the quat correctly, luckily we don't read any bytes here
-                // 2. Inner quat axis rotations might not need to be normalizd
-                // 
-                // From official C# impl
-                // rightGaze = Quaternion.LookRotation(swapX(points3D[66]) - swapX(points3D[68])) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(180, Vector3.forward);
-                // leftGaze = Quaternion.LookRotation(swapX(points3D[67]) - swapX(points3D[69])) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(180, Vector3.forward);
-                // data.rightGaze = quat.axis_rotation(
-                //     data.points3d[66] - data.points3d[68],
-                //     (
-                //         quat.axis_rotation(
-                //             180f, vec3(1f, 0f, 0f)
-                //         ).normalized()
-                //         *
-                //         quat.axis_rotation(
-                //             180f, vec3(1f, 0f, 1f)
-                //         ).normalized())
-                // ).normalized();
-                // data.leftGaze = quat.axis_rotation(
-                //     data.points3d[67] - data.points3d[69],
-                //     (
-                //         quat.axis_rotation(
-                //             180f, vec3(1f, 0f, 0f)
-                //         ).normalized()
-                //         *
-                //         quat.axis_rotation(
-                //             180f, vec3(1f, 0f, 1f)
-                //         ).normalized())
-                // ).normalized();
-
-//                debug foreach (b; bytes) {
-//                    write(format("%02x ", b));
-//                }
-//                debug writeln();
+                data.rightGaze = quat.look_rotation(swapX(data.points3d[66]) - swapX(data.points3d[68]), vec3(0, 1, 0)) * quat.axis_rotation(180, vec3(1, 0, 0)) * quat.axis_rotation(180, vec3(0, 0, 1));
+                data.leftGaze  = quat.look_rotation(swapX(data.points3d[67]) - swapX(data.points3d[69]), vec3(0, 1, 0)) * quat.axis_rotation(180, vec3(1, 0, 0)) * quat.axis_rotation(180, vec3(0, 0, 1));
                 foreach(name; EnumMembers!OSFFeatureName) {
                     data.features[name] = bytes.read!(float, Endian.littleEndian)();
-//                    debug writeln(format("read: %s = %0.4f", name, data.features[name]));
                 }
-//                debug writeln(format("read: %d bytes", recvBytes - bytes.length));
                 tsdata.set(data);
             } catch (Exception ex) {
                 Thread.sleep(100.msecs);
@@ -280,6 +222,8 @@ public:
                 blendshapes = data.features.dup;
                 blendshapes["EyeOpenRight"] = data.rightEyeOpen;
                 blendshapes["EyeOpenLeft"]  = data.leftEyeOpen;
+                bones["RightGaze"] = Bone(vec3(0,0,0), data.rightGaze);
+                bones["LeftGaze"]  = Bone(vec3(0,0,0), data.leftGaze);
             }
 
         }
