@@ -9,8 +9,28 @@ import std.bitmanip;
 import gl3n.linalg;
 import core.thread;
 import core.sync.mutex;
+import std.traits;
+import std.string;
+import std.stdio:writeln, write;
 
 const ushort trackingPoints = 68;
+enum OSFFeatureName {
+    eyeLeft                = "eyeLeft",
+    eyeRight               = "eyeRight",
+    eyebrowSteepnessLeft   = "eyebrowSteppnessLeft",
+    eyebrowUpDownLeft      = "eyebrowUpDownLeft",
+    eyebrowQuirkLeft       = "eyebrowQuirkLeft",
+    eyebrowSteepnessRight  = "eyebrowSteppnessRight",
+    eyebrowUpDownRight     = "eyebrowUpDownRight",
+    eyebrowQuirkRight      = "eyebrowQuirkRight",
+    mouthCornerUpDownLeft  = "mouthCornerUpDownLeft",
+    mouthCornerInOutLeft   = "mouthCornerInOutLeft",
+    mouthCornerUpDownRight = "mouthCornerUpDownRight",
+    mouthCornerInOutRight  = "mouthCornerInOutRight",
+    mouthOpen              = "mouthOpen",
+    mouthWide              = "mouthWide"
+}
+
 const ushort packetFrameSize = 8
     + 4
     + 2 * 4
@@ -20,9 +40,9 @@ const ushort packetFrameSize = 8
     + 3 * 4
     + 3 * 4
     + 4 * 4
-    + 4 * 68
-    + 4 * 2 * 68
-    + 4 * 2 * 70
+    + 4 * (trackingPoints)
+    + 4 * 2 * (trackingPoints)
+    + 4 * 3 * (trackingPoints + 2)
     + 4 * 14;
 
 struct OSFData {
@@ -45,29 +65,7 @@ struct OSFData {
     vec2[trackingPoints] points;
     vec3[trackingPoints + 2] points3d;
 
-    OSFFeatures openSeeFaceFeatures;
-}
-
-struct OSFFeatures {
-    float eyeLeft;
-    float eyeRight;
-
-    float eyebrowSteepnessLeft;
-    float eyebrowUpDownLeft;
-    float eyebrowQuirkLeft;
-
-    float eyebrowSteepnessRight;
-    float eyebrowUpDownRight;
-    float eyebrowQuirkRight;
-
-    float mouthCornerUpDownLeft;
-    float mouthCornerInOutLeft;
-
-    float mouthCornerUpDownRight;
-    float mouthCornerInOutRight;
-
-    float mouthOpen;
-    float mouthWide;
+    float[string] features;
 }
 
 struct OSFThreadSafeData {
@@ -113,71 +111,73 @@ private:
     Thread receivingThread;
 
     OSFThreadSafeData tsdata;
-
-    bool readBool(ubyte[] b) {
-        return b.read!bool();
+/*
+    double readDouble(ubyte[] bytes) {
+        return bytes.read!(double, Endian.littleEndian)();
     }
-
-    int readInt(ubyte[] b) {
-        return b.read!int();
+    float readFloat(ubyte[] bytes) {
+        return bytes.read!(float, Endian.littleEndian)();
     }
-
-    float readFloat(ubyte[] b) {
-        return b.read!float();
+    int readInt(ubyte[] bytes) {
+        return bytes.read!(int, Endian.littleEndian)();
     }
-
-    double readDouble(ubyte[] b) {
-        return b.read!double();
+    bool readBool(ubyte[] bytes) {
+        return bytes.read!(bool, Endian.littleEndian)();
     }
-
-    vec2 readVec2(ubyte[] b) {
-        return vec2(readFloat(b), readFloat(b));
+    vec2 readVec2(ubyte[] bytes) {
+        return vec2(read!(float, Endian.littleEndian)(bytes), read!(float, Endian.littleEndian)(bytes));
     }
-
-    vec3 readVec3(ubyte[] b) {
-        return vec3(readFloat(b), readFloat(b), readFloat(b));
+    vec3 readVec3(ubyte[] bytes) {
+        return vec3(read!(float, Endian.littleEndian)(bytes), read!(float, Endian.littleEndian)(bytes), read!(float, Endian.littleEndian)(bytes));
     }
-
-    quat readQuat(ubyte[] b) {
-        return quat(readFloat(b), readFloat(b), readFloat(b), readFloat(b));
+    quat readQuat(ubyte[] bytes) {
+        return quat(read!(float, Endian.littleEndian)(bytes), read!(float, Endian.littleEndian)(bytes), read!(float, Endian.littleEndian)(bytes), read!(float, Endian.littleEndian)(bytes));
     }
-
+*/
     void receiveThread() {
-        ubyte[packetFrameSize] bytes;
+        ubyte[packetFrameSize] buffer;
         while (!isCloseRequested) {
             try {
                 // Data must always match the expected amount of bytes
-                if (osf.receive(bytes) < packetFrameSize) {
+                long recvBytes = osf.receive(buffer);
+                ubyte[] bytes = buffer;
+//                debug writeln(format("Received bytes = %d, expected %d bytes", recvBytes, packetFrameSize));
+                if (recvBytes < packetFrameSize) {
+                    writeln("Buffer shorted.");
                     Thread.sleep(100.msecs);
                     return;
                 }
 
                 OSFData data;
-                OSFFeatures features;
 
-                data.time = readDouble(bytes);
-                data.id = readInt(bytes);
-                data.cameraResolution = readVec2(bytes);
+                data.time = bytes.read!(double, Endian.littleEndian)();
+                data.id = bytes.read!(int, Endian.littleEndian)();
+                data.cameraResolution = vec2(bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)());
 
-                data.rightEyeOpen = readFloat(bytes);
-                data.leftEyeOpen = readFloat(bytes);
+                data.rightEyeOpen = bytes.read!(float, Endian.littleEndian)();
+                data.leftEyeOpen = bytes.read!(float, Endian.littleEndian)();
 
-                data.got3dPoints = readBool(bytes);
-                data.fit3dError = readFloat(bytes);
+                data.got3dPoints = bytes.read!(bool, Endian.littleEndian)();
+                data.fit3dError = bytes.read!(float, Endian.littleEndian)();
 
-                data.rawQuaternion = readQuat(bytes);
-                data.rawEuler = readVec3(bytes);
-                data.translation = readVec3(bytes);
+                data.rawQuaternion = quat(bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)());
+                data.rawEuler = vec3(bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)());
+                data.translation = vec3(bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)());
+
+//                debug writeln(format("left %d bytes, read: %d bytes", bytes.length, recvBytes - bytes.length));
 
                 for (int i = 0; i < trackingPoints; i++) {
-                    data.confidence[i] = readFloat(bytes);
+                    data.confidence[i] = bytes.read!(float, Endian.littleEndian)();
                 }
+//                debug writeln(format("left %d bytes, read: %d bytes", bytes.length, recvBytes - bytes.length));
                 for (int i = 0; i < trackingPoints; i++) {
-                    data.points[i] = readVec2(bytes);
+                    data.points[i] = vec2(bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)());
                 }
+//                debug writeln(format("left %d bytes, read: %d bytes", bytes.length, recvBytes - bytes.length));
                 for (int i = 0; i < trackingPoints + 2; i++) {
-                    data.points3d[i] = readVec3(bytes);
+                    data.points3d[i] = vec3(bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)());
                 }
+//                debug writeln(format("left %d bytes, read: %d bytes", bytes.length, recvBytes - bytes.length));
 
                 // TODO
                 // 0. This 100% won't compile
@@ -210,27 +210,15 @@ private:
                 //         ).normalized())
                 // ).normalized();
 
-                features.eyeLeft = readFloat(bytes);
-                features.eyeRight = readFloat(bytes);
-                
-                features.eyebrowSteepnessLeft = readFloat(bytes);
-                features.eyebrowUpDownLeft = readFloat(bytes);
-                features.eyebrowQuirkLeft = readFloat(bytes);
-
-                features.eyebrowSteepnessRight = readFloat(bytes);
-                features.eyebrowUpDownRight = readFloat(bytes);
-                features.eyebrowQuirkRight = readFloat(bytes);
-
-                features.mouthCornerUpDownLeft = readFloat(bytes);
-                features.mouthCornerInOutLeft = readFloat(bytes);
-                features.mouthCornerUpDownRight = readFloat(bytes);
-                features.mouthCornerInOutRight = readFloat(bytes);
-
-                features.mouthOpen = readFloat(bytes);
-                features.mouthWide = readFloat(bytes);
-
-                data.openSeeFaceFeatures = features;
-
+//                debug foreach (b; bytes) {
+//                    write(format("%02x ", b));
+//                }
+//                debug writeln();
+                foreach(name; EnumMembers!OSFFeatureName) {
+                    data.features[name] = bytes.read!(float, Endian.littleEndian)();
+//                    debug writeln(format("read: %s = %0.4f", name, data.features[name]));
+                }
+//                debug writeln(format("read: %d bytes", recvBytes - bytes.length));
                 tsdata.set(data);
             } catch (Exception ex) {
                 Thread.sleep(100.msecs);
@@ -284,10 +272,16 @@ public:
         if (tsdata.updated) {
             OSFData data = tsdata.get();
 
-            bones[BoneNames.ftHead] = Bone(
-                data.translation,
-                data.rawQuaternion
-            );
+            if (data.got3dPoints) {
+                bones[BoneNames.ftHead] = Bone(
+                    data.translation,
+                    data.rawQuaternion
+                );
+                blendshapes = data.features.dup;
+                blendshapes["EyeOpenRight"] = data.rightEyeOpen;
+                blendshapes["EyeOpenLeft"]  = data.leftEyeOpen;
+            }
+
         }
     }
 
