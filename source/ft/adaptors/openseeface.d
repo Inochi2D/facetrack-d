@@ -6,7 +6,7 @@ import std.socket;
 import std.conv : to;
 import std.range.primitives;
 import std.bitmanip;
-import gl3n.linalg;
+import inmath.linalg;
 import core.thread;
 import core.sync.mutex;
 import std.traits;
