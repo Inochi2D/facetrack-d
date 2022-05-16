@@ -119,15 +119,15 @@ private:
 
     void receiveThread() {
         ubyte[packetFrameSize] buffer;
+
         while (!isCloseRequested) {
             try {
                 // Data must always match the expected amount of bytes
-                long recvBytes = osf.receive(buffer);
+                ptrdiff_t recvBytes = osf.receive(buffer);
                 ubyte[] bytes = buffer;
                 if (recvBytes < packetFrameSize) {
-                    writeln("Buffer shorted.");
-                    Thread.sleep(100.msecs);
-                    return;
+                    // Ignoring short packets, and read next packet.
+                    continue;
                 }
 
                 OSFData data;
@@ -175,22 +175,23 @@ public:
 
     override
     void start(string[string] options = string[string].init) {
-        if ("port" in options) {
-            port = to!ushort(options["port"]);
+        if ("osf_bind_port" in options) {
+            port = to!ushort(options["osf_bind_port"]);
         }
 
-        if ("address" in options) {
-            bind = options["address"];
+        if ("osf_bind_ip" in options) {
+            bind = options["osf_bind_ip"];
         }
-
         if (isRunning) {
             this.stop();
         }
 
+        isCloseRequested = false;
         tsdata = OSFThreadSafeData(new Mutex());
         
         osf = new UdpSocket();
         osf.bind(new InternetAddress(bind, port));
+        osf.setOption(SocketOptionLevel.SOCKET, SocketOption.RCVTIMEO, 16.msecs);
 
         if (osf.isAlive) {
             receivingThread = new Thread(&receiveThread);
@@ -200,13 +201,15 @@ public:
 
     override
     void stop() {
-        isCloseRequested = true;
+        if (isRunning) {
+            isCloseRequested = true;
+            if (receivingThread !is null)
+                receivingThread.join();
+            osf.close();
 
-        receivingThread.join();
-        osf.close();
-
-        receivingThread = null;
-        osf = null;
+            receivingThread = null;
+            osf = null;
+        }
     }
 
     override
@@ -237,8 +240,8 @@ public:
     override
     string[] getOptionNames() {
         return [
-            "port",
-            "address"
+            "osf_bind_port",
+            "osf_bind_ip"
         ];
     }
 
