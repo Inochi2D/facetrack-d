@@ -200,13 +200,14 @@ public:
 
     override
     void stop() {
-        isCloseRequested = true;
+        if (isRunning) {
+            isCloseRequested = true;
+            receivingThread.join();
+            osf.close();
 
-        receivingThread.join();
-        osf.close();
-
-        receivingThread = null;
-        osf = null;
+            receivingThread = null;
+            osf = null;
+        }
     }
 
     override
