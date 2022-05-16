@@ -179,8 +179,8 @@ public:
             port = to!ushort(options["osf_bind_port"]);
         }
 
-        if ("osf_ip" in options) {
-            bind = options["osf_ip"];
+        if ("osf_bind_ip" in options) {
+            bind = options["osf_bind_ip"];
         }
         if (isRunning) {
             this.stop();
@@ -241,7 +241,7 @@ public:
     string[] getOptionNames() {
         return [
             "osf_bind_port",
-            "osf_ip"
+            "osf_bind_ip"
         ];
     }
 
