@@ -12,6 +12,7 @@ import core.sync.mutex;
 import std.traits;
 import std.string;
 import std.stdio:writeln, write;
+import std.math : PI;
 
 const ushort trackingPoints = 68;
 enum OSFFeatureName {
@@ -47,7 +48,7 @@ const ushort packetFrameSize = 8
 
 struct OSFData {
     double time;
-    int32_t id;
+    int id;
     vec2 cameraResolution;
 
     float rightEyeOpen;
@@ -156,8 +157,8 @@ private:
                     data.points3d[i] = vec3(bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)());
                 }
 
-                data.rightGaze = quat.look_rotation(swapX(data.points3d[66]) - swapX(data.points3d[68]), vec3(0, 1, 0)) * quat.axis_rotation(180, vec3(1, 0, 0)) * quat.axis_rotation(180, vec3(0, 0, 1));
-                data.leftGaze  = quat.look_rotation(swapX(data.points3d[67]) - swapX(data.points3d[69]), vec3(0, 1, 0)) * quat.axis_rotation(180, vec3(1, 0, 0)) * quat.axis_rotation(180, vec3(0, 0, 1));
+                data.rightGaze = quat.lookRotation(swapX(data.points3d[66]) - swapX(data.points3d[68]), vec3(0, 1, 0)) * quat.axisRotation(PI, vec3(1, 0, 0)) * quat.axisRotation(PI, vec3(0, 0, 1));
+                data.leftGaze  = quat.lookRotation(swapX(data.points3d[67]) - swapX(data.points3d[69]), vec3(0, 1, 0)) * quat.axisRotation(PI, vec3(1, 0, 0)) * quat.axisRotation(PI, vec3(0, 0, 1));
                 foreach(name; EnumMembers!OSFFeatureName) {
                     data.features[name] = bytes.read!(float, Endian.littleEndian)();
                 }
