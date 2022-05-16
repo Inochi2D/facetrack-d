@@ -8,6 +8,7 @@ A library for interfacing with face tracking systems.
 ## Supported Adaptors
  - VMC
  - VTubeStudio protocol
+ - OpenSeeFace
 
 ## Adaptors to be supported
- - OpenSeeFace
+ - NVIDIA Maxine
