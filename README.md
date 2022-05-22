@@ -9,6 +9,7 @@ A library for interfacing with face tracking systems.
  - VMC
  - VTubeStudio protocol
  - OpenSeeFace
+ - J!NS MEME Logger
 
 ## Adaptors to be supported
  - NVIDIA Maxine
