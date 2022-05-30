@@ -3,6 +3,7 @@ import ft.data;
 
 abstract class Adaptor {
 protected:
+    float[string] nativeBlendshapes;
     float[string] blendshapes;
     Bone[string] bones;
 
@@ -15,6 +16,9 @@ public:
 
     final
     ref float[string] getBlendshapes() { return blendshapes; }
+
+    final
+    ref float[string] getNativeBlendshapes() { return nativeBlendshapes; }
 
     final
     ref Bone[string] getBones() { return bones; }
