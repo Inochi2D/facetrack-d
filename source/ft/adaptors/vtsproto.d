@@ -288,31 +288,63 @@ public:
 
             if (data.blendShapesDict.length > 0) {
 
-                // LEFT EYE
-                this.blendshapes[BlendshapeNames.ftEyeBlinkLeft] = this.nativeBlendshapes["EyeBlinkLeft"];
-                this.blendshapes[BlendshapeNames.ftEyeXLeft] = this.nativeBlendshapes["EyeLookOutLeft"]-this.nativeBlendshapes["EyeLookInLeft"];
-                this.blendshapes[BlendshapeNames.ftEyeYLeft] = this.nativeBlendshapes["EyeLookUpLeft"]-this.nativeBlendshapes["EyeLookDownLeft"];
-                this.blendshapes[BlendshapeNames.ftEyeSquintLeft] = this.nativeBlendshapes["EyeSquintLeft"];
-                this.blendshapes[BlendshapeNames.ftEyeWidenLeft] = this.nativeBlendshapes["EyeSquintLeft"];
+                // CHECK FOR ANDROID
+                if ("jawOpen" in this.nativeBlendshapes) {    // LEFT EYE
+                    this.blendshapes[BlendshapeNames.ftEyeBlinkLeft] = this.nativeBlendshapes["EyeBlinkLeft"];
+                    this.blendshapes[BlendshapeNames.ftEyeXLeft] = this.nativeBlendshapes["eyeLookOut_L"]-this.nativeBlendshapes["eyeLookIn_L"];
+                    this.blendshapes[BlendshapeNames.ftEyeYLeft] = this.nativeBlendshapes["eyeLookUp_L"]-this.nativeBlendshapes["eyeLookDown_L"];
+                    this.blendshapes[BlendshapeNames.ftEyeSquintLeft] = this.nativeBlendshapes["eyeSquint_L"];
+                    this.blendshapes[BlendshapeNames.ftEyeWidenLeft] = this.nativeBlendshapes["eyeSquint_L"];
 
-                // RIGHT EYE
-                this.blendshapes[BlendshapeNames.ftEyeBlinkRight] = this.nativeBlendshapes["EyeBlinkRight"];
-                this.blendshapes[BlendshapeNames.ftEyeXRight] = this.nativeBlendshapes["EyeLookInRight"]-this.nativeBlendshapes["EyeLookOutRight"];
-                this.blendshapes[BlendshapeNames.ftEyeYRight] = this.nativeBlendshapes["EyeLookUpRight"]-this.nativeBlendshapes["EyeLookDownRight"];
-                this.blendshapes[BlendshapeNames.ftEyeSquintRight] = this.nativeBlendshapes["EyeSquintRight"];
-                this.blendshapes[BlendshapeNames.ftEyeWidenRight] = this.nativeBlendshapes["EyeSquintRight"];
+                    // RIGHT EYE
+                    this.blendshapes[BlendshapeNames.ftEyeBlinkRight] = this.nativeBlendshapes["EyeBlinkRight"];
+                    this.blendshapes[BlendshapeNames.ftEyeXRight] = this.nativeBlendshapes["eyeLookIn_R"]-this.nativeBlendshapes["eyeLookOut_R"];
+                    this.blendshapes[BlendshapeNames.ftEyeYRight] = this.nativeBlendshapes["eyeLookUp_R"]-this.nativeBlendshapes["eyeLookDown_R"];
+                    this.blendshapes[BlendshapeNames.ftEyeSquintRight] = this.nativeBlendshapes["eyeSquint_R"];
+                    this.blendshapes[BlendshapeNames.ftEyeWidenRight] = this.nativeBlendshapes["eyeSquint_R"];
 
-                // MOUTH
-                this.blendshapes[BlendshapeNames.ftMouthOpen] = this.nativeBlendshapes["JawOpen"];
-                this.blendshapes[BlendshapeNames.ftMouthX] = (1 + this.nativeBlendshapes["MouthLeft"]-this.nativeBlendshapes["MouthRight"]) / 2.0;
-                this.blendshapes[BlendshapeNames.ftMouthEmotion] = (
-                        clamp(
-                            1 +
-                                (this.nativeBlendshapes["MouthSmileLeft"]+this.nativeBlendshapes["MouthSmileRight"]/2.0) -
-                                (this.nativeBlendshapes["MouthFrownLeft"]+this.nativeBlendshapes["MouthFrownRight"]/2.0),
-                            0, 2
-                        )
-                    ) / 2.0;
+                    // MOUTH
+                    this.blendshapes[BlendshapeNames.ftMouthOpen] = this.nativeBlendshapes["jawOpen"];
+                    this.blendshapes[BlendshapeNames.ftMouthX] = (1 + this.nativeBlendshapes["mouthLeft"]-this.nativeBlendshapes["mouthRight"]) / 2.0;
+                    this.blendshapes[BlendshapeNames.ftMouthEmotion] = (
+                            clamp(
+                                1 +
+                                    (this.nativeBlendshapes["mouthSmile_L"]+this.nativeBlendshapes["mouthSmile_R"]/2.0) -
+                                    (this.nativeBlendshapes["mouthFrown_L"]+this.nativeBlendshapes["mouthFrown_R"]/2.0),
+                                0, 2
+                            )
+                        ) / 2.0;
+
+                } else {
+
+                    // WE'RE ON IOS
+
+                    // LEFT EYE
+                    this.blendshapes[BlendshapeNames.ftEyeBlinkLeft] = this.nativeBlendshapes["EyeBlinkLeft"];
+                    this.blendshapes[BlendshapeNames.ftEyeXLeft] = this.nativeBlendshapes["EyeLookOutLeft"]-this.nativeBlendshapes["EyeLookInLeft"];
+                    this.blendshapes[BlendshapeNames.ftEyeYLeft] = this.nativeBlendshapes["EyeLookUpLeft"]-this.nativeBlendshapes["EyeLookDownLeft"];
+                    this.blendshapes[BlendshapeNames.ftEyeSquintLeft] = this.nativeBlendshapes["EyeSquintLeft"];
+                    this.blendshapes[BlendshapeNames.ftEyeWidenLeft] = this.nativeBlendshapes["EyeSquintLeft"];
+
+                    // RIGHT EYE
+                    this.blendshapes[BlendshapeNames.ftEyeBlinkRight] = this.nativeBlendshapes["EyeBlinkRight"];
+                    this.blendshapes[BlendshapeNames.ftEyeXRight] = this.nativeBlendshapes["EyeLookInRight"]-this.nativeBlendshapes["EyeLookOutRight"];
+                    this.blendshapes[BlendshapeNames.ftEyeYRight] = this.nativeBlendshapes["EyeLookUpRight"]-this.nativeBlendshapes["EyeLookDownRight"];
+                    this.blendshapes[BlendshapeNames.ftEyeSquintRight] = this.nativeBlendshapes["EyeSquintRight"];
+                    this.blendshapes[BlendshapeNames.ftEyeWidenRight] = this.nativeBlendshapes["EyeSquintRight"];
+
+                    // MOUTH
+                    this.blendshapes[BlendshapeNames.ftMouthOpen] = this.nativeBlendshapes["JawOpen"];
+                    this.blendshapes[BlendshapeNames.ftMouthX] = (1 + this.nativeBlendshapes["MouthLeft"]-this.nativeBlendshapes["MouthRight"]) / 2.0;
+                    this.blendshapes[BlendshapeNames.ftMouthEmotion] = (
+                            clamp(
+                                1 +
+                                    (this.nativeBlendshapes["MouthSmileLeft"]+this.nativeBlendshapes["MouthSmileRight"]/2.0) -
+                                    (this.nativeBlendshapes["MouthFrownLeft"]+this.nativeBlendshapes["MouthFrownRight"]/2.0),
+                                0, 2
+                            )
+                        ) / 2.0;
+                }
             }
         }
     }
