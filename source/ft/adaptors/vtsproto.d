@@ -315,10 +315,9 @@ public:
                             )
                         ) / 2.0;
 
-                } else {
+                } else if ("JawOpen" in this.nativeBlendshapes) {
 
                     // WE'RE ON IOS
-
                     // LEFT EYE
                     this.blendshapes[BlendshapeNames.ftEyeBlinkLeft] = this.nativeBlendshapes["EyeBlinkLeft"];
                     this.blendshapes[BlendshapeNames.ftEyeXLeft] = this.nativeBlendshapes["EyeLookOutLeft"]-this.nativeBlendshapes["EyeLookInLeft"];
@@ -345,6 +344,9 @@ public:
                             )
                         ) / 2.0;
                 }
+
+                // If both cases are false there's a problem!
+                // TODO: make some logs that can be sent to devs?
             }
         }
     }
