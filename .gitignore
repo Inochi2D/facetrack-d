@@ -15,3 +15,4 @@ facetrack-d-test-*
 *.lst
 *.a
 dub.selections.json
+out/
