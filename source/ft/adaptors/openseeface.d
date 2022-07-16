@@ -13,6 +13,7 @@ import std.traits;
 import std.string;
 import std.stdio:writeln, write;
 import std.math : PI;
+import inmath.math;
 
 const ushort trackingPoints = 68;
 enum OSFFeatureName {
@@ -112,6 +113,8 @@ private:
     Thread receivingThread;
 
     OSFThreadSafeData tsdata;
+
+    bool gotDataFromFetch;
 
     vec3 swapX(vec3 v) {
         v.x = -v.x;
@@ -216,6 +219,7 @@ public:
     override
     void poll() {
         if (tsdata.updated) {
+            gotDataFromFetch = true;
             OSFData data = tsdata.get();
 
             if (data.got3dPoints) {
@@ -228,14 +232,32 @@ public:
                 blendshapes["EyeOpenLeft"]  = data.leftEyeOpen;
                 bones["RightGaze"] = Bone(vec3(0,0,0), data.rightGaze);
                 bones["LeftGaze"]  = Bone(vec3(0,0,0), data.leftGaze);
+
+                this.blendshapes[BlendshapeNames.ftEyeBlinkLeft] = 1-data.leftEyeOpen;
+                this.blendshapes[BlendshapeNames.ftEyeBlinkRight] = 1-data.rightEyeOpen;
+                this.blendshapes[BlendshapeNames.ftMouthOpen] = data.features[OSFFeatureName.mouthOpen];
+                this.blendshapes[BlendshapeNames.ftMouthX] = (1 + data.features[OSFFeatureName.mouthCornerInOutLeft]-data.features[OSFFeatureName.mouthCornerInOutRight]) / 2.0;
+                this.blendshapes[BlendshapeNames.ftMouthEmotion] = (
+                    clamp(
+                        1 +
+                            ((data.features[OSFFeatureName.mouthCornerUpDownRight]*2)-1) -
+                            ((data.features[OSFFeatureName.mouthCornerUpDownLeft]*2)-1),
+                        0, 2
+                    )
+                ) / 2.0;
             }
 
-        }
+        } else gotDataFromFetch = false;
     }
 
     override
     bool isRunning() {
         return osf !is null;
+    }
+
+    override
+    bool isReceivingData() {
+        return gotDataFromFetch;
     }
 
     override
