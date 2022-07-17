@@ -283,7 +283,7 @@ public:
 
             bones[BoneNames.ftHead] = Bone(
                 vec3(data.position.x*-1, data.position.y, data.position.z),
-                quat.eulerRotation(radians(data.rotation.y), radians(data.rotation.x), radians(data.rotation.z))
+                quat.eulerRotation(radians(data.rotation.z), radians(data.rotation.y), radians(data.rotation.x))
             );
 
             // Duplicate blendshapes in
