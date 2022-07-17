@@ -12,6 +12,8 @@ private:
     ushort port = 39540;
     string bind = "0.0.0.0";
 
+    bool gotDataFromFetch;
+
 public:
 
     override
@@ -43,6 +45,7 @@ public:
     override
     void poll() {
         const(Message)[] msgs = server.popMessages();
+        gotDataFromFetch = msgs.length > 0;
         foreach(const(Message) msg; msgs) {
             if (msg.addressPattern.length < 3) continue;
             if (msg.addressPattern[0].toString != "/VMC" && msg.addressPattern[1].toString != "/Ext") continue;
@@ -75,6 +78,11 @@ public:
                 default: break;
             }
         }
+    }
+
+    override
+    bool isReceivingData() {
+        return gotDataFromFetch;
     }
 
     override
