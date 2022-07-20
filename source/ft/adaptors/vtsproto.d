@@ -283,6 +283,8 @@ public:
 
     override
     void poll() {
+        if (!isRunning) return;
+        
         if (tsdata.updated) {
             gotDataFromFetch = true;
             VTSRawTrackingData data = tsdata.get();
