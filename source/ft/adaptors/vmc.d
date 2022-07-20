@@ -16,6 +16,11 @@ private:
 
 public:
 
+    override 
+    string getAdaptorName() {
+        return "VMC Receiver";
+    }
+
     override
     void start(string[string] options = string[string].init) {
         if ("port" in options) {

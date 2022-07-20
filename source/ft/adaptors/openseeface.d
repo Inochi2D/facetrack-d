@@ -177,6 +177,11 @@ public:
         this.stop();
     }
 
+    override 
+    string getAdaptorName() {
+        return "OpenSeeFace";
+    }
+
     override
     void start(string[string] options = string[string].init) {
         if ("osf_bind_port" in options) {

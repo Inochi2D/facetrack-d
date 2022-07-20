@@ -213,6 +213,11 @@ public:
         this.stop();
     }
 
+    override 
+    string getAdaptorName() {
+        return "VTubeStudio";
+    }
+
     override
     void start(string[string] options = string[string].init) {
 

@@ -13,6 +13,7 @@ public:
     abstract string[] getOptionNames();
     abstract bool isRunning();
     abstract bool isReceivingData();
+    abstract string getAdaptorName();
 
     final
     ref float[string] getBlendshapes() { return blendshapes; }
