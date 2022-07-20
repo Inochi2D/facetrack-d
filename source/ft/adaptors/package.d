@@ -23,6 +23,19 @@ Adaptor ftCreateAdaptor(string name) {
     return null;
 }
 
+/**
+    Creates a new adaptor from an adaptor factory tag,
+    this adaptor will have the specified start options
+*/
+Adaptor ftCreateAdaptor(string name, string[string] options) {
+    if (name in adaptorFactories) {
+        auto adaptor = adaptorFactories[name]();
+        adaptor.start(options);
+        return adaptor;
+    }
+    return null;
+}
+
 shared static this() {
     ftRegisterAdaptorFactory("VTubeStudio", () { return new VTSAdaptor(); });
     ftRegisterAdaptorFactory("OpenSeeFace", () { return new OSFAdaptor(); });

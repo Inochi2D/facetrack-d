@@ -218,10 +218,8 @@ public:
         return "VTubeStudio";
     }
 
-    override
-    void start(string[string] options = string[string].init) {
-        this.options = options;
-
+    override 
+    void start() {
         // VTubeStudio wants an app name to be known by
         if ("appName" in options) {
             appName = options["appName"];
@@ -257,7 +255,7 @@ public:
 
             listeningThread = new Thread(&listenThread);
             listeningThread.start();
-        }        
+        }       
     }
 
     override

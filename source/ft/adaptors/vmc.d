@@ -22,9 +22,7 @@ public:
     }
 
     override
-    void start(string[string] options = string[string].init) {
-        this.options = options;
-        
+    void start() {
         if ("port" in options) {
             port = to!ushort(options["port"]);
         }

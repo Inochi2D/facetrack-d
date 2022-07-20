@@ -8,7 +8,7 @@ protected:
     string[string] options;
 
 public:
-    abstract void start(string[string] options = string[string].init);
+    abstract void start();
     abstract void stop();
     abstract void poll();
     abstract string[] getOptionNames();
@@ -17,6 +17,15 @@ public:
     abstract string getAdaptorName();
 
     final
+    void start(string[string] options) {
+        this.setOptions(options);
+        this.start();
+    }
+
+    final
+    void setOptions(string[string] options = string[string].init) { this.options = options; }
+    final
+
     ref string[string] getOptions() { return options; }
     
     final
