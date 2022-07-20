@@ -220,6 +220,7 @@ public:
 
     override
     void start(string[string] options = string[string].init) {
+        this.options = options;
 
         // VTubeStudio wants an app name to be known by
         if ("appName" in options) {

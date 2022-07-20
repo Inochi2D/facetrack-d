@@ -5,6 +5,7 @@ abstract class Adaptor {
 protected:
     float[string] blendshapes;
     Bone[string] bones;
+    string[string] options;
 
 public:
     abstract void start(string[string] options = string[string].init);
@@ -15,6 +16,9 @@ public:
     abstract bool isReceivingData();
     abstract string getAdaptorName();
 
+    final
+    ref string[string] getOptions() { return options; }
+    
     final
     ref float[string] getBlendshapes() { return blendshapes; }
 

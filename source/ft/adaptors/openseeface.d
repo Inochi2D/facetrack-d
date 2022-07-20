@@ -184,6 +184,8 @@ public:
 
     override
     void start(string[string] options = string[string].init) {
+        this.options = options;
+        
         if ("osf_bind_port" in options) {
             port = to!ushort(options["osf_bind_port"]);
         }
