@@ -184,7 +184,7 @@ public:
 
     override
     void start() {
-        
+
         if ("osf_bind_port" in options) {
             port = to!ushort(options["osf_bind_port"]);
         }
@@ -224,6 +224,8 @@ public:
 
     override
     void poll() {
+        if (!isRunning) return;
+        
         if (tsdata.updated) {
             gotDataFromFetch = true;
             OSFData data = tsdata.get();

@@ -49,6 +49,8 @@ public:
 
     override
     void poll() {
+        if (!isRunning) return;
+        
         const(Message)[] msgs = server.popMessages();
         gotDataFromFetch = msgs.length > 0;
         foreach(const(Message) msg; msgs) {
