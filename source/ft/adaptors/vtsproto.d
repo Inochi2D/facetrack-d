@@ -284,8 +284,9 @@ public:
         if (!isRunning) return;
         
         if (tsdata.updated) {
-            gotDataFromFetch = true;
             VTSRawTrackingData data = tsdata.get();
+            dataLossCounter = 0;
+            gotDataFromFetch = data.faceFound;
 
             bones[BoneNames.ftHead] = Bone(
                 vec3(data.position.x*-1, data.position.y, data.position.z),
@@ -388,7 +389,8 @@ public:
                 }
             } catch (Exception ex) { } // Some unknown format, drop creating ft blendshapes
         } else {
-            gotDataFromFetch = false;
+            dataLossCounter++;
+            if (dataLossCounter > RECV_TIMEOUT) gotDataFromFetch = false;
         }
     }
 

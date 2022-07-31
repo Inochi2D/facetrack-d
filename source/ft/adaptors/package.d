@@ -39,5 +39,5 @@ Adaptor ftCreateAdaptor(string name, string[string] options) {
 shared static this() {
     ftRegisterAdaptorFactory("VTubeStudio", () { return new VTSAdaptor(); });
     ftRegisterAdaptorFactory("OpenSeeFace", () { return new OSFAdaptor(); });
-    ftRegisterAdaptorFactory("VMC Reciever", () { return new VMCAdaptor(); });
+    ftRegisterAdaptorFactory("VMC Receiver", () { return new VMCAdaptor(); });
 }

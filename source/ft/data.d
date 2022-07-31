@@ -101,8 +101,6 @@ enum BlendshapeNames : string {
     ftU = "ftU",
     ftE = "ftE",
     ftO = "ftO",
-
-
 }
 
 /**
