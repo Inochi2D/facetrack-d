@@ -101,8 +101,6 @@ enum BlendshapeNames : string {
     ftU = "ftU",
     ftE = "ftE",
     ftO = "ftO",
-
-
 }
 
 /**
@@ -175,10 +173,10 @@ struct Bone {
     /**
         Position of the bone
     */
-    vec3 position;
+    vec3 position = vec3(0);
 
     /**
         Rotation of the bone
     */
-    quat rotation;
+    quat rotation = quat.identity;
 }

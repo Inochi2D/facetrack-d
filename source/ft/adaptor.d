@@ -7,7 +7,14 @@ protected:
     Bone[string] bones;
     string[string] options;
 
+    int dataLossCounter;
+    enum RECV_TIMEOUT = 16;
+
 public:
+    ~this() {
+        if (this.isRunning) this.stop();
+    }
+
     abstract void start();
     abstract void stop();
     abstract void poll();

@@ -114,6 +114,9 @@ private:
 
     OSFThreadSafeData tsdata;
 
+
+    int dataLossCounter;
+    enum RECV_TIMEOUT = 16;
     bool gotDataFromFetch;
 
     vec3 swapX(vec3 v) {
@@ -227,6 +230,7 @@ public:
         if (!isRunning) return;
         
         if (tsdata.updated) {
+            dataLossCounter = 0;
             gotDataFromFetch = true;
             OSFData data = tsdata.get();
 
@@ -255,7 +259,10 @@ public:
                 ) / 2.0;
             }
 
-        } else gotDataFromFetch = false;
+        } else {
+            dataLossCounter++;
+            if (dataLossCounter > RECV_TIMEOUT) gotDataFromFetch = false;
+        }
     }
 
     override

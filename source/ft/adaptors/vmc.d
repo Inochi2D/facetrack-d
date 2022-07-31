@@ -52,38 +52,46 @@ public:
         if (!isRunning) return;
         
         const(Message)[] msgs = server.popMessages();
-        gotDataFromFetch = msgs.length > 0;
-        foreach(const(Message) msg; msgs) {
-            if (msg.addressPattern.length < 3) continue;
-            if (msg.addressPattern[0].toString != "/VMC" && msg.addressPattern[1].toString != "/Ext") continue;
-            switch(msg.addressPattern[2].toString) {
-                case "/Bone":
-                    if (msg.arg!string(0) !in bones) {
-                        bones[msg.arg!string(0)] = Bone(
-                            vec3.init,
-                            quat.identity
-                        );
-                    }
+        if (msgs.length > 0) {
+            dataLossCounter = 0;
+            gotDataFromFetch = true;
 
-                    this.bones[msg.arg!string(0)].position = vec3(
-                        msg.arg!float(1),
-                        msg.arg!float(2),
-                        msg.arg!float(3)
-                    );
-                    
-                    this.bones[msg.arg!string(0)].rotation = quat(
-                        msg.arg!float(7), 
-                        msg.arg!float(4), 
-                        msg.arg!float(5), 
-                        msg.arg!float(6)
-                    );
-                    break;
-                case "/Blend":
-                    if (msg.addressPattern[3].toString == "/Apply") break;
-                    this.blendshapes[msg.arg!string(0)] = msg.arg!float(1);
-                    break;
-                default: break;
+            foreach(const(Message) msg; msgs) {
+                if (msg.addressPattern.length < 3) continue;
+                if (msg.addressPattern[0].toString != "/VMC" && msg.addressPattern[1].toString != "/Ext") continue;
+                switch(msg.addressPattern[2].toString) {
+                    case "/Bone":
+                        if (msg.arg!string(0) !in bones) {
+                            bones[msg.arg!string(0)] = Bone(
+                                vec3.init,
+                                quat.identity
+                            );
+                        }
+
+                        this.bones[msg.arg!string(0)].position = vec3(
+                            msg.arg!float(1),
+                            msg.arg!float(2),
+                            msg.arg!float(3)
+                        );
+                        
+                        // NOTE: the bones quaternion is modified here to match the output of the VTS Protocol
+                        this.bones[msg.arg!string(0)].rotation = quat(
+                            msg.arg!float(7), 
+                            -msg.arg!float(6), 
+                            msg.arg!float(4), 
+                            -msg.arg!float(5), 
+                        );
+                        break;
+                    case "/Blend":
+                        if (msg.addressPattern[3].toString == "/Apply") break;
+                        this.blendshapes[msg.arg!string(0)] = msg.arg!float(1);
+                        break;
+                    default: break;
+                }
             }
+        } else {
+            dataLossCounter++;
+            if (dataLossCounter > RECV_TIMEOUT) gotDataFromFetch = false;
         }
     }
 
