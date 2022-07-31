@@ -57,6 +57,7 @@ private:
 
     bool isCloseRequested;
     Thread receivingThread;
+    bool gotDataFromFetch = false;
 
     JMLThreadSafeData tsdata;
 
@@ -110,13 +111,13 @@ public:
     }
 
     override
-    void start(string[string] options = string[string].init) {
-        if ("jml_bind_port" in options) {
-            port = to!ushort(options["jml_bind_port"]);
+    void start() {
+        if ("jml_bind_port" in this.options) {
+            port = to!ushort(this.options["jml_bind_port"]);
         }
 
-        if ("jml_bind_ip" in options) {
-            bind = options["jml_bind_ip"];
+        if ("jml_bind_ip" in this.options) {
+            bind = this.options["jml_bind_ip"];
         }
         if (isRunning) {
             this.stop();
@@ -138,10 +139,11 @@ public:
     override
     void poll() {
         if (tsdata.updated) {
+            gotDataFromFetch = true;
             JMLData data = tsdata.get();
 
             blendshapes = data.data.dup;
-        }
+        } else gotDataFromFetch = false;
     }
 
     override
@@ -157,4 +159,12 @@ public:
         ];
     }
 
+    override string getAdaptorName() {
+        return "JINS MEME Logger";
+    }
+
+    override
+    bool isReceivingData() {
+        return gotDataFromFetch;
+    }
 }

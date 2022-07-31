@@ -16,8 +16,13 @@ private:
 
 public:
 
+    override 
+    string getAdaptorName() {
+        return "VMC Receiver";
+    }
+
     override
-    void start(string[string] options = string[string].init) {
+    void start() {
         if ("port" in options) {
             port = to!ushort(options["port"]);
         }
@@ -44,6 +49,8 @@ public:
 
     override
     void poll() {
+        if (!isRunning) return;
+        
         const(Message)[] msgs = server.popMessages();
         gotDataFromFetch = msgs.length > 0;
         foreach(const(Message) msg; msgs) {

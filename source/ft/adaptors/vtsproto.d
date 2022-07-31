@@ -213,9 +213,13 @@ public:
         this.stop();
     }
 
-    override
-    void start(string[string] options = string[string].init) {
+    override 
+    string getAdaptorName() {
+        return "VTubeStudio";
+    }
 
+    override 
+    void start() {
         // VTubeStudio wants an app name to be known by
         if ("appName" in options) {
             appName = options["appName"];
@@ -251,7 +255,7 @@ public:
 
             listeningThread = new Thread(&listenThread);
             listeningThread.start();
-        }        
+        }       
     }
 
     override
@@ -277,6 +281,8 @@ public:
 
     override
     void poll() {
+        if (!isRunning) return;
+        
         if (tsdata.updated) {
             gotDataFromFetch = true;
             VTSRawTrackingData data = tsdata.get();

@@ -177,8 +177,14 @@ public:
         this.stop();
     }
 
+    override 
+    string getAdaptorName() {
+        return "OpenSeeFace";
+    }
+
     override
-    void start(string[string] options = string[string].init) {
+    void start() {
+
         if ("osf_bind_port" in options) {
             port = to!ushort(options["osf_bind_port"]);
         }
@@ -218,6 +224,8 @@ public:
 
     override
     void poll() {
+        if (!isRunning) return;
+        
         if (tsdata.updated) {
             gotDataFromFetch = true;
             OSFData data = tsdata.get();
