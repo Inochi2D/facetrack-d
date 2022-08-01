@@ -8,7 +8,11 @@ import core.thread;
 import core.sync.mutex;
 import std.traits;
 import std.string;
+<<<<<<< HEAD
 import std.stdio:writeln, write, writefln;
+=======
+import std.stdio:writeln, write;
+>>>>>>> 7c585d7e4b98f3ebfd8bc21472048e7116f5b506
 import std.json;
 
 
@@ -22,22 +26,32 @@ private:
     JMLData data;
     Mutex mtx;
     bool updated_;
+<<<<<<< HEAD
+=======
+
+>>>>>>> 7c585d7e4b98f3ebfd8bc21472048e7116f5b506
 public:
     this(Mutex mutex) {
         this.mtx = mutex;
     }
 
     bool updated() {
+<<<<<<< HEAD
         if (mtx is null)
             return false;
+=======
+>>>>>>> 7c585d7e4b98f3ebfd8bc21472048e7116f5b506
         mtx.lock();
         scope(exit) mtx.unlock();
         return updated_;
     }
 
     void set(JMLData data) {
+<<<<<<< HEAD
         if (mtx is null)
             return;
+=======
+>>>>>>> 7c585d7e4b98f3ebfd8bc21472048e7116f5b506
         mtx.lock();
         updated_ = true;
         this.data = data;
@@ -45,8 +59,11 @@ public:
     }
 
     JMLData get() {
+<<<<<<< HEAD
         if (mtx is null)
             return data;
+=======
+>>>>>>> 7c585d7e4b98f3ebfd8bc21472048e7116f5b506
         mtx.lock();
         updated_ = false;
         scope(exit) mtx.unlock();
@@ -63,6 +80,7 @@ private:
     bool isCloseRequested;
     Thread receivingThread;
 
+<<<<<<< HEAD
     int dataLossCounter;
     enum RECV_TIMEOUT = 30;
     bool gotDataFromFetch = false;
@@ -73,6 +91,10 @@ private:
     float initYaw;
     int initSequenceNumber;
     int numInitYaw;
+=======
+    JMLThreadSafeData tsdata;
+
+>>>>>>> 7c585d7e4b98f3ebfd8bc21472048e7116f5b506
 
 public:
     ~this() {
