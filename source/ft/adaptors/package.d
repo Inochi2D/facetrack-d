@@ -41,4 +41,5 @@ shared static this() {
     ftRegisterAdaptorFactory("VTubeStudio", () { return new VTSAdaptor(); });
     ftRegisterAdaptorFactory("OpenSeeFace", () { return new OSFAdaptor(); });
     ftRegisterAdaptorFactory("VMC Receiver", () { return new VMCAdaptor(); });
+    ftRegisterAdaptorFactory("JINS MEME Logger", () { return new JMLAdaptor(); });
 }

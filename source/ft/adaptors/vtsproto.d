@@ -395,6 +395,10 @@ public:
     }
 
     override
+    void calibrate() {
+    }
+
+    override
     bool isRunning() {
         return vtsOut !is null;
     }

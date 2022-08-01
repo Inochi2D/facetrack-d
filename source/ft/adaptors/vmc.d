@@ -96,6 +96,10 @@ public:
     }
 
     override
+    void calibrate() {
+    }
+
+    override
     bool isReceivingData() {
         return gotDataFromFetch;
     }

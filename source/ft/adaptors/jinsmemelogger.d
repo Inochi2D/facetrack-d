@@ -8,7 +8,7 @@ import core.thread;
 import core.sync.mutex;
 import std.traits;
 import std.string;
-import std.stdio:writeln, write;
+import std.stdio:writeln, write, writefln;
 import std.json;
 
 
@@ -22,19 +22,22 @@ private:
     JMLData data;
     Mutex mtx;
     bool updated_;
-
 public:
     this(Mutex mutex) {
         this.mtx = mutex;
     }
 
     bool updated() {
+        if (mtx is null)
+            return false;
         mtx.lock();
         scope(exit) mtx.unlock();
         return updated_;
     }
 
     void set(JMLData data) {
+        if (mtx is null)
+            return;
         mtx.lock();
         updated_ = true;
         this.data = data;
@@ -42,6 +45,8 @@ public:
     }
 
     JMLData get() {
+        if (mtx is null)
+            return data;
         mtx.lock();
         updated_ = false;
         scope(exit) mtx.unlock();
@@ -57,10 +62,17 @@ private:
 
     bool isCloseRequested;
     Thread receivingThread;
+
+    int dataLossCounter;
+    enum RECV_TIMEOUT = 30;
     bool gotDataFromFetch = false;
 
     JMLThreadSafeData tsdata;
 
+    bool calibrated;
+    float initYaw;
+    int initSequenceNumber;
+    int numInitYaw;
 
 public:
     ~this() {
@@ -112,6 +124,7 @@ public:
 
     override
     void start() {
+        calibrate();
         if ("jml_bind_port" in this.options) {
             port = to!ushort(this.options["jml_bind_port"]);
         }
@@ -136,14 +149,48 @@ public:
         }
     }
 
+    int CALIBRATION_PERIOD = 60;
     override
     void poll() {
         if (tsdata.updated) {
+            dataLossCounter = 0;
             gotDataFromFetch = true;
             JMLData data = tsdata.get();
 
             blendshapes = data.data.dup;
-        } else gotDataFromFetch = false;
+            if (!calibrated) {
+                if (initSequenceNumber < 0)
+                    initSequenceNumber = cast(int)blendshapes["sequenceNumber"];
+                int sequenceNumber = cast(int)blendshapes["sequenceNumber"] - initSequenceNumber;
+                sequenceNumber = sequenceNumber < 0 ? sequenceNumber + 256 : sequenceNumber;
+                if (sequenceNumber < CALIBRATION_PERIOD) {
+                    initYaw += blendshapes["yaw"];
+                    numInitYaw ++;
+                } else {
+                    initYaw = initYaw / numInitYaw;
+                    this.calibrated = true;
+                }
+                blendshapes["jmlYaw"] = 0.0;
+            } else {
+                float headYaw;
+                headYaw    = blendshapes["yaw"] - initYaw;
+                headYaw    = headYaw > 180? -360 + headYaw: headYaw;
+                headYaw    = headYaw < -180? 360 + headYaw: headYaw;
+                blendshapes["jmlYaw"] = headYaw;
+            }
+        } else {
+            dataLossCounter ++;
+            if (dataLossCounter > RECV_TIMEOUT)
+               gotDataFromFetch = false;
+        }
+    }
+
+    override
+    void calibrate() {
+        calibrated = false;
+        initYaw = 0;
+        initSequenceNumber = -1;
+        numInitYaw = 0;
     }
 
     override
