@@ -8,4 +8,12 @@ targetPath "out/"
 dependency "inmath" version="~>1.0.2"
 dependency "vmc-d" version="~>1.1.1"
 dependency "fghj" version="~>1.0.0"
-dependency "vibe-d" version="~>0.9.4"
+
+configuration "default" {
+    targetType "library"
+}
+
+configuration "jml" {
+    versions "JML"
+    dependency "vibe-d" version="~>0.9.4"
+}

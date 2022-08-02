@@ -1,4 +1,5 @@
 module ft.adaptors.jinsmemelogger;
+version (JML) {
 import ft.adaptor;
 import ft.data;
 
@@ -67,14 +68,12 @@ private:
     int dataLossCounter;
     int sequenceNumber;
     enum RECV_TIMEOUT = 30;
-    enum CALIBRATION_PERIOD = 60;
     enum CALIBRATION_TRIGGER_INTERVAL = 20 * 30;
 
     bool gotDataFromFetch = false;
 
     JMLThreadSafeData tsdata;
 
-    bool calibrated;
     float initYaw = 0;
     float nextYaw = 0;
     int numInitYaw;
@@ -117,7 +116,6 @@ public:
         HTTPServerSettings settings =  new HTTPServerSettings();
         settings.port = port;
         settings.bindAddresses = [bind];
-        writeln("bindAddresses=", settings.bindAddresses);
 
         auto router = new URLRouter;
         router.get("/", handleWebSockets(&this.handleConnection));
@@ -126,7 +124,6 @@ public:
         while (!isCloseRequested) {
             runEventLoopOnce();
         }
-        writeln("Stopped");
         listener.stopListening();
     }
 
@@ -170,16 +167,9 @@ public:
 
             blendshapes = data.data.dup;
 
-            if (sequenceNumber >= CALIBRATION_TRIGGER_INTERVAL) {
-                writeln("Executes calibration.");
-                onBootup = false;
-                calibrate();
-            }
-
             if (lastSequenceNumber < 0) {
                 lastSequenceNumber = cast(int)blendshapes["sequenceNumber"];
                 sequenceNumber = 0;
-                writeln("initialize sequenceNumber: %d", sequenceNumber);
             }
 
             int sequenceDiff = cast(int)blendshapes["sequenceNumber"] - lastSequenceNumber;
@@ -192,47 +182,22 @@ public:
                     sequenceNumber = 0;
                     onBootup = false;
                 }
-                writefln("subtract %f[index=%d]", yawHistory[sequenceNumber], sequenceNumber);
                 nextYaw -= yawHistory[sequenceNumber];
                 yawHistory[sequenceNumber] = cast(int)blendshapes["yaw"];
-                writefln("add %f", yawHistory[sequenceNumber]);
                 nextYaw += yawHistory[sequenceNumber];
                 if (onBootup)
-                    numInitYaw+=sequenceDiff;
+                    numInitYaw += sequenceDiff;
             }
 
-            writefln("sequenceNumber=%d(diff=%d)", sequenceNumber, sequenceDiff);
             lastSequenceNumber = cast(int)blendshapes["sequenceNumber"];
-/*
-            if (!calibrated) {    
-                if (sequenceNumber < CALIBRATION_PERIOD) {
-                    nextYaw += blendshapes["yaw"];
-                    numInitYaw ++;
-                } else {
-                    initYaw = nextYaw / numInitYaw;
-                    this.calibrated = true;
-                    onBootup = false;
-                }
-                blendshapes["jmlYaw"] = 0.0;
-            }
-*/
-            if (!calibrated) {
-                if (sequenceNumber>=CALIBRATION_PERIOD) {
-                    calibrated = true;
-                }
-            }
             if (numInitYaw > 0)
                 initYaw = nextYaw / numInitYaw;
-            writefln("initYaw=%f (num=%d)", initYaw, numInitYaw);
-//            if (!onBootup) {
-                float headYaw;
-                headYaw    = blendshapes["yaw"] - initYaw;
-                headYaw    = headYaw > 180? -360 + headYaw: headYaw;
-                headYaw    = headYaw < -180? 360 + headYaw: headYaw;
-                blendshapes["jmlYaw"] = headYaw;
-//            } else {
-//                blendshapes["jmlYaw"] = 0;
-//            }
+
+            float headYaw;
+            headYaw    = blendshapes["yaw"] - initYaw;
+            headYaw    = headYaw > 180? -360 + headYaw: headYaw;
+            headYaw    = headYaw < -180? 360 + headYaw: headYaw;
+            blendshapes["jmlYaw"] = headYaw;
 
         } else {
             dataLossCounter ++;
@@ -243,13 +208,11 @@ public:
 
     override
     void calibrate() {
-        calibrated = false;
         lastSequenceNumber = -1;
         numInitYaw = 0;
         if (onBootup)
             foreach (i; 0..CALIBRATION_TRIGGER_INTERVAL)
                 yawHistory[i] = 0;
-//        nextYaw = 0;
     }
 
     override
@@ -273,4 +236,7 @@ public:
     bool isReceivingData() {
         return gotDataFromFetch;
     }
+}
+
+    
 }
