@@ -206,7 +206,6 @@ public:
         }
     }
 
-    override
     void calibrate() {
         lastSequenceNumber = -1;
         numInitYaw = 0;

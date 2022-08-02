@@ -266,10 +266,6 @@ public:
     }
 
     override
-    void calibrate() {
-    }
-
-    override
     bool isRunning() {
         return osf !is null;
     }

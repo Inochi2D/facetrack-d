@@ -18,7 +18,6 @@ public:
     abstract void start();
     abstract void stop();
     abstract void poll();
-    abstract void calibrate();
     abstract string[] getOptionNames();
     abstract bool isRunning();
     abstract bool isReceivingData();
