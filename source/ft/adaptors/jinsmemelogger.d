@@ -65,15 +65,22 @@ private:
     Thread receivingThread;
 
     int dataLossCounter;
+    int sequenceNumber;
     enum RECV_TIMEOUT = 30;
+    enum CALIBRATION_PERIOD = 60;
+    enum CALIBRATION_TRIGGER_INTERVAL = 20 * 30;
+
     bool gotDataFromFetch = false;
 
     JMLThreadSafeData tsdata;
 
     bool calibrated;
-    float initYaw;
-    int initSequenceNumber;
+    float initYaw = 0;
+    float nextYaw = 0;
     int numInitYaw;
+    int lastSequenceNumber;
+    int onBootup = true;
+    float[CALIBRATION_TRIGGER_INTERVAL] yawHistory = [0];
 
 public:
     ~this() {
@@ -127,12 +134,15 @@ public:
     void start() {
         calibrate();
         if ("jml_bind_port" in this.options) {
-            if (options["jml_bind_port"] != "")
+            string port_str = options["jml_bind_port"];
+            if (port_str !is null && port_str != "")
                 port = to!ushort(this.options["jml_bind_port"]);
         }
 
         if ("jml_bind_ip" in this.options) {
-            bind = this.options["jml_bind_ip"];
+            string addr_str = options["jml_bind_ip"];
+            if (addr_str !is null && addr_str != "")
+                bind = this.options["jml_bind_ip"];
         }
         if (isRunning) {
             this.stop();
@@ -151,7 +161,6 @@ public:
         }
     }
 
-    int CALIBRATION_PERIOD = 60;
     override
     void poll() {
         if (tsdata.updated) {
@@ -160,26 +169,71 @@ public:
             JMLData data = tsdata.get();
 
             blendshapes = data.data.dup;
-            if (!calibrated) {
-                if (initSequenceNumber < 0)
-                    initSequenceNumber = cast(int)blendshapes["sequenceNumber"];
-                int sequenceNumber = cast(int)blendshapes["sequenceNumber"] - initSequenceNumber;
-                sequenceNumber = sequenceNumber < 0 ? sequenceNumber + 256 : sequenceNumber;
+
+            if (sequenceNumber >= CALIBRATION_TRIGGER_INTERVAL) {
+                writeln("Executes calibration.");
+                onBootup = false;
+                calibrate();
+            }
+
+            if (lastSequenceNumber < 0) {
+                lastSequenceNumber = cast(int)blendshapes["sequenceNumber"];
+                sequenceNumber = 0;
+                writeln("initialize sequenceNumber: %d", sequenceNumber);
+            }
+
+            int sequenceDiff = cast(int)blendshapes["sequenceNumber"] - lastSequenceNumber;
+            if (sequenceDiff < 0)
+                sequenceDiff += 256;
+
+            if (sequenceDiff > 0) {
+                sequenceNumber += sequenceDiff;
+                if (sequenceNumber >= CALIBRATION_TRIGGER_INTERVAL) {
+                    sequenceNumber = 0;
+                    onBootup = false;
+                }
+                writefln("subtract %f[index=%d]", yawHistory[sequenceNumber], sequenceNumber);
+                nextYaw -= yawHistory[sequenceNumber];
+                yawHistory[sequenceNumber] = cast(int)blendshapes["yaw"];
+                writefln("add %f", yawHistory[sequenceNumber]);
+                nextYaw += yawHistory[sequenceNumber];
+                if (onBootup)
+                    numInitYaw+=sequenceDiff;
+            }
+
+            writefln("sequenceNumber=%d(diff=%d)", sequenceNumber, sequenceDiff);
+            lastSequenceNumber = cast(int)blendshapes["sequenceNumber"];
+/*
+            if (!calibrated) {    
                 if (sequenceNumber < CALIBRATION_PERIOD) {
-                    initYaw += blendshapes["yaw"];
+                    nextYaw += blendshapes["yaw"];
                     numInitYaw ++;
                 } else {
-                    initYaw = initYaw / numInitYaw;
+                    initYaw = nextYaw / numInitYaw;
                     this.calibrated = true;
+                    onBootup = false;
                 }
                 blendshapes["jmlYaw"] = 0.0;
-            } else {
+            }
+*/
+            if (!calibrated) {
+                if (sequenceNumber>=CALIBRATION_PERIOD) {
+                    calibrated = true;
+                }
+            }
+            if (numInitYaw > 0)
+                initYaw = nextYaw / numInitYaw;
+            writefln("initYaw=%f (num=%d)", initYaw, numInitYaw);
+//            if (!onBootup) {
                 float headYaw;
                 headYaw    = blendshapes["yaw"] - initYaw;
                 headYaw    = headYaw > 180? -360 + headYaw: headYaw;
                 headYaw    = headYaw < -180? 360 + headYaw: headYaw;
                 blendshapes["jmlYaw"] = headYaw;
-            }
+//            } else {
+//                blendshapes["jmlYaw"] = 0;
+//            }
+
         } else {
             dataLossCounter ++;
             if (dataLossCounter > RECV_TIMEOUT)
@@ -190,9 +244,12 @@ public:
     override
     void calibrate() {
         calibrated = false;
-        initYaw = 0;
-        initSequenceNumber = -1;
+        lastSequenceNumber = -1;
         numInitYaw = 0;
+        if (onBootup)
+            foreach (i; 0..CALIBRATION_TRIGGER_INTERVAL)
+                yawHistory[i] = 0;
+//        nextYaw = 0;
     }
 
     override
