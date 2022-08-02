@@ -3,6 +3,9 @@ import ft.adaptor;
 public import ft.adaptors.vmc : VMCAdaptor;
 public import ft.adaptors.vtsproto : VTSAdaptor;
 public import ft.adaptors.openseeface : OSFAdaptor;
+version (JML) {
+    public import ft.adaptors.jinsmemelogger : JMLAdaptor;
+}
 
 private {
     Adaptor function()[string] adaptorFactories;
@@ -40,4 +43,7 @@ shared static this() {
     ftRegisterAdaptorFactory("VTubeStudio", () { return new VTSAdaptor(); });
     ftRegisterAdaptorFactory("OpenSeeFace", () { return new OSFAdaptor(); });
     ftRegisterAdaptorFactory("VMC Receiver", () { return new VMCAdaptor(); });
+    version (JML) {
+        ftRegisterAdaptorFactory("JINS MEME Logger", () { return new JMLAdaptor(); });
+    }
 }
