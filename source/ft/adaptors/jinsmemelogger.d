@@ -204,7 +204,7 @@ public:
 
     override
     bool isRunning() {
-        return server !is null && server.isRunning(); //receivingThread !is null;
+        return server !is null && server.isRunning();
     }
 
     override
