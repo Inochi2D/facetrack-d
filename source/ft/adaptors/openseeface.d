@@ -153,7 +153,7 @@ private:
                 float qy = bytes.read!(float, Endian.littleEndian)();
                 float qz = bytes.read!(float, Endian.littleEndian)();
                 float qw = bytes.read!(float, Endian.littleEndian)();
-                data.rawQuaternion = quat(qw, qx, qy, qz);
+                data.rawQuaternion = quat(qw, -qz, qx, -qy);
                 data.rawEuler = vec3(bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)());
                 data.translation = vec3(bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)());
 
