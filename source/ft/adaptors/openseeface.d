@@ -149,7 +149,11 @@ private:
                 data.got3dPoints = bytes.read!(bool, Endian.littleEndian)();
                 data.fit3dError = bytes.read!(float, Endian.littleEndian)();
 
-                data.rawQuaternion = quat(bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)());
+                float qx = bytes.read!(float, Endian.littleEndian)();
+                float qy = bytes.read!(float, Endian.littleEndian)();
+                float qz = bytes.read!(float, Endian.littleEndian)();
+                float qw = bytes.read!(float, Endian.littleEndian)();
+                data.rawQuaternion = quat(qw, qx, qy, qz);
                 data.rawEuler = vec3(bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)());
                 data.translation = vec3(bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)());
 
