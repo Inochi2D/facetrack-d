@@ -3,14 +3,16 @@ version (JML) {
 import ft.adaptor;
 import ft.data;
 
-import vibe.d;
 import inmath.linalg;
 import core.thread;
 import core.sync.mutex;
 import std.traits;
 import std.string;
 import std.stdio:writeln, write, writefln;
+import std.conv;
 import std.json;
+
+import hunt.http;
 
 
 struct JMLData {
@@ -60,7 +62,7 @@ class JMLAdaptor : Adaptor {
 private:
     ushort port = 23456;
     string bind = "0.0.0.0";
-    HTTPListener listener;
+    HttpServer server;
 
     bool isCloseRequested;
     Thread receivingThread;
@@ -86,45 +88,19 @@ public:
         this.stop();
     }
 
-    void handleConnection(scope WebSocket socket) {
-
-        while (!isCloseRequested && socket.connected) {
-            try {
-                ptrdiff_t received = socket.waitForData(16.msecs);
-                if (received < 0) {
-                    continue;
+    void handleText(string text) {
+        if (!isCloseRequested) {
+            JMLData data;
+            foreach (string key, value; parseJSON(text)) {
+                try {
+                    data.data[key] = value.get!float();
+                } catch (Exception ex) {                    
                 }
-                JMLData data;
-
-                auto text = socket.receiveText;
-                foreach (string key, value; parseJson(text)) {
-                    data.data[key] = value.to!float;
-                }
-
-                tsdata.set(data);
-            } catch (Exception ex) {
-                Thread.sleep(100.msecs);
             }
+
+            tsdata.set(data);
+
         }
-        
-    }
-
-    void receiveThread() {
-        isCloseRequested = false;
-        tsdata = JMLThreadSafeData(new Mutex());
-
-        HTTPServerSettings settings =  new HTTPServerSettings();
-        settings.port = port;
-        settings.bindAddresses = [bind];
-
-        auto router = new URLRouter;
-        router.get("/", handleWebSockets(&this.handleConnection));
-
-        listener = listenHTTP(settings, router);
-        while (!isCloseRequested) {
-            runEventLoopOnce();
-        }
-        listener.stopListening();
     }
 
     override
@@ -133,28 +109,40 @@ public:
         if ("jml_bind_port" in this.options) {
             string port_str = options["jml_bind_port"];
             if (port_str !is null && port_str != "")
-                port = to!ushort(this.options["jml_bind_port"]);
+                this.port = to!ushort(this.options["jml_bind_port"]);
         }
 
         if ("jml_bind_ip" in this.options) {
             string addr_str = options["jml_bind_ip"];
             if (addr_str !is null && addr_str != "")
-                bind = this.options["jml_bind_ip"];
+                this.bind = this.options["jml_bind_ip"];
         }
         if (isRunning) {
             this.stop();
         }
-        receivingThread = new Thread(&receiveThread);
-        receivingThread.start();
+
+        isCloseRequested = false;
+        tsdata = JMLThreadSafeData(new Mutex());
+        this.server = HttpServer.builder()
+            .setListener(port, bind)
+            .websocket("/", new class AbstractWebSocketMessageHandler {
+                override void onText(WebSocketConnection connection, string text)
+                {
+                    if (isCloseRequested) {
+                        connection.close();
+                    } else
+                        handleText(text);
+                }
+            }).build();
+
+        server.start(); // serer is running in background.
     }
 
     override
     void stop() {
         if (isRunning) {
             isCloseRequested = true;
-            listener.stopListening();
-            receivingThread.join();
-            receivingThread = null;
+            server.stop();
         }
     }
 
@@ -216,7 +204,7 @@ public:
 
     override
     bool isRunning() {
-        return receivingThread !is null;
+        return server !is null && server.isRunning(); //receivingThread !is null;
     }
 
     override
