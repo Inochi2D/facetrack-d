@@ -124,6 +124,10 @@ private:
         return v;
     }
 
+    float degreesAngleWrap(float af) {
+        return ((af + 180) % 360) - 180;
+    }
+
     void receiveThread() {
         ubyte[packetFrameSize] buffer;
 
@@ -239,9 +243,25 @@ public:
             OSFData data = tsdata.get();
 
             if (data.got3dPoints) {
+                // use Euler for this due to issues with quaternions
+                // X: Pitch, home position 150 (yes really)
+                //    positive values ACTOR-PITCH-FORWARD, positive ACTOR-PITCH-BACK
+                // Y: Yaw, home position 0
+                //    negative values ACTOR-YAW-RIGHT, positive ACTOR-YAW-LEFT
+                // Z: Roll, home position 90
+                //    negative values ACTOR-ROLL-LEFT, positive ACTOR-ROLL-RIGHT
+                // writeln("raw: ", data.rawEuler.x, " ", data.rawEuler.y, " ", data.rawEuler.z);
+                vec3 homePosEuler = vec3(
+                    degreesAngleWrap(150 - data.rawEuler.x),
+                    degreesAngleWrap(-data.rawEuler.y),
+                    degreesAngleWrap(data.rawEuler.z - 90)
+                );
+                // writeln("homed: ", homePosEuler.x, " ", homePosEuler.y, " ", homePosEuler.z);
                 bones[BoneNames.ftHead] = Bone(
                     data.translation,
-                    data.rawQuaternion
+                    // data.rawQuaternion
+                    // inmath is roll/pitch/yaw in radians
+                    quat.eulerRotation(radians(homePosEuler.z), radians(homePosEuler.x), radians(homePosEuler.y))
                 );
                 blendshapes = data.features.dup;
                 blendshapes["EyeOpenRight"] = data.rightEyeOpen;
