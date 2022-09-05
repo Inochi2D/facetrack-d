@@ -6,7 +6,7 @@ license "BSD 2-clause"
 targetPath "out/"
 
 dependency "inmath" version="~>1.0.2"
-dependency "vmc-d" version="~>1.1.1"
+dependency "vmc-d" version="~>1.1.2"
 dependency "fghj" version="~>1.0.0"
 
 configuration "default" {
