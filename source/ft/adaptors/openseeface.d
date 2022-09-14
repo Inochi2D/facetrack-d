@@ -11,7 +11,6 @@ import core.thread;
 import core.sync.mutex;
 import std.traits;
 import std.string;
-import std.stdio:writeln, write;
 import std.math : PI;
 import inmath.math;
 
@@ -157,7 +156,9 @@ private:
                 float qy = bytes.read!(float, Endian.littleEndian)();
                 float qz = bytes.read!(float, Endian.littleEndian)();
                 float qw = bytes.read!(float, Endian.littleEndian)();
-                data.rawQuaternion = quat(qw, -qz, qx, -qy);
+                // (-qw, qx, qy, qz) corresponds to `rawEuler` below in `ZXY` conventiobn
+
+                data.rawQuaternion = quat(-qw, qx, qy, qz); 
                 data.rawEuler = vec3(bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)());
                 data.translation = vec3(bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)());
 
@@ -168,11 +169,13 @@ private:
                     data.points[i] = vec2(bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)());
                 }
                 for (int i = 0; i < trackingPoints + 2; i++) {
-                    data.points3d[i] = vec3(bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)());
+                    // OSF C# code negates y
+                    data.points3d[i] = vec3(bytes.read!(float, Endian.littleEndian)(), -bytes.read!(float, Endian.littleEndian)(), bytes.read!(float, Endian.littleEndian)());
                 }
 
                 data.rightGaze = quat.lookRotation(swapX(data.points3d[66]) - swapX(data.points3d[68]), vec3(0, 1, 0)) * quat.axisRotation(PI, vec3(1, 0, 0)) * quat.axisRotation(PI, vec3(0, 0, 1));
                 data.leftGaze  = quat.lookRotation(swapX(data.points3d[67]) - swapX(data.points3d[69]), vec3(0, 1, 0)) * quat.axisRotation(PI, vec3(1, 0, 0)) * quat.axisRotation(PI, vec3(0, 0, 1));
+
                 foreach(name; EnumMembers!OSFFeatureName) {
                     data.features[name] = bytes.read!(float, Endian.littleEndian)();
                 }
@@ -243,31 +246,28 @@ public:
             OSFData data = tsdata.get();
 
             if (data.got3dPoints) {
-                // use Euler for this due to issues with quaternions
-                // X: Pitch, home position 150 (yes really)
-                //    positive values ACTOR-PITCH-FORWARD, positive ACTOR-PITCH-BACK
-                // Y: Yaw, home position 0
-                //    negative values ACTOR-YAW-RIGHT, positive ACTOR-YAW-LEFT
-                // Z: Roll, home position 90
-                //    negative values ACTOR-ROLL-LEFT, positive ACTOR-ROLL-RIGHT
-                // writeln("raw: ", data.rawEuler.x, " ", data.rawEuler.y, " ", data.rawEuler.z);
-                vec3 homePosEuler = vec3(
-                    degreesAngleWrap(150 - data.rawEuler.x),
-                    degreesAngleWrap(-data.rawEuler.y),
-                    degreesAngleWrap(data.rawEuler.z - 90)
-                );
-                // writeln("homed: ", homePosEuler.x, " ", homePosEuler.y, " ", homePosEuler.z);
+                // convert OpenCV coordinate system to Unity
+                quat toRotate = quat.eulerRotation(radians(180), 0, radians(90));
+                quat temp = toRotate * data.rawQuaternion;
+
+                // convert from Unity to Inochi2d convention
+                quat converted = quat(temp.w, temp.z, temp.x, temp.y);
                 bones[BoneNames.ftHead] = Bone(
                     data.translation,
-                    // data.rawQuaternion
-                    // inmath is roll/pitch/yaw in radians
-                    quat.eulerRotation(radians(homePosEuler.z), radians(homePosEuler.x), radians(homePosEuler.y))
+                    converted
                 );
+
+                // convert from Unity to Inochi2d convention
+                auto convertedLeft = quat(data.leftGaze.w, data.leftGaze.z, data.leftGaze.x, data.leftGaze.y);
+                auto convertedRight = quat(data.rightGaze.w, data.rightGaze.z, data.rightGaze.x, data.rightGaze.y);
+
+                bones["LeftGaze"]  = Bone(vec3(0,0,0), convertedLeft);
+                bones["RightGaze"] = Bone(vec3(0,0,0), convertedRight);
+
                 blendshapes = data.features.dup;
+
                 blendshapes["EyeOpenRight"] = data.rightEyeOpen;
                 blendshapes["EyeOpenLeft"]  = data.leftEyeOpen;
-                bones["RightGaze"] = Bone(vec3(0,0,0), data.rightGaze);
-                bones["LeftGaze"]  = Bone(vec3(0,0,0), data.leftGaze);
 
                 this.blendshapes[BlendshapeNames.ftEyeBlinkLeft] = 1-data.leftEyeOpen;
                 this.blendshapes[BlendshapeNames.ftEyeBlinkRight] = 1-data.rightEyeOpen;
