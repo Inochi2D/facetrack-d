@@ -3,7 +3,10 @@ version (JML) {
 import ft.adaptor;
 import ft.data;
 
-import vibe.d;
+import vibe.http.websockets;
+import vibe.http.server;
+import vibe.http.router;
+import vibe.data.json;
 import inmath.linalg;
 import core.thread;
 import core.sync.mutex;
@@ -11,6 +14,7 @@ import std.traits;
 import std.string;
 import std.stdio:writeln, write, writefln;
 import std.json;
+import std.conv;
 
 
 struct JMLData {
@@ -60,7 +64,6 @@ class JMLAdaptor : Adaptor {
 private:
     ushort port = 23456;
     string bind = "0.0.0.0";
-    HTTPListener listener;
 
     bool isCloseRequested;
     Thread receivingThread;
@@ -120,9 +123,9 @@ public:
         auto router = new URLRouter;
         router.get("/", handleWebSockets(&this.handleConnection));
 
-        listener = listenHTTP(settings, router);
+        HTTPListener listener = listenHTTP(settings, router);
         while (!isCloseRequested) {
-            runEventLoopOnce();
+            Thread.sleep(dur!"seconds"(1));
         }
         listener.stopListening();
     }
@@ -152,7 +155,6 @@ public:
     void stop() {
         if (isRunning) {
             isCloseRequested = true;
-            listener.stopListening();
             receivingThread.join();
             receivingThread = null;
         }
