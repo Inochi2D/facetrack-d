@@ -8,13 +8,12 @@ targetPath "out/"
 dependency "inmath" version="~>1.0.2"
 dependency "vmc-d" version="~>1.1.2"
 dependency "fghj" version="~>1.0.0"
-dependency "vibe-d:http" version="~>0.9.4"
 
 configuration "default" {
     targetType "library"
 }
 
 configuration "jml" {
-    versions "JML"
+    versions "JML" "WebHookAdaptor"
     dependency "vibe-d" version="~>0.9.4"
 }

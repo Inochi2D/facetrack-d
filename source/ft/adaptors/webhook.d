@@ -1,11 +1,11 @@
 module ft.adaptors.webhook;
+version (WebHookAdaptor) {
 import ft.adaptor;
 import ft.data;
 
 import vibe.http.server;
 import vibe.http.router;
 import vibe.data.json;
-import vibe.core.core;
 import core.thread;
 import core.sync.mutex;
 import core.time;
@@ -113,7 +113,7 @@ public:
 
         listener = listenHTTP(settings, router);
         while (!isCloseRequested) {
-            sleep(dur!"seconds"(1));
+            Thread.sleep(dur!"seconds"(1));
         }
         listener.stopListening();
     }
@@ -183,4 +183,4 @@ public:
         return gotDataFromFetch;
     }
 }
-
+}
