@@ -7,6 +7,7 @@ import vibe.http.websockets;
 import vibe.http.server;
 import vibe.http.router;
 import vibe.data.json;
+import vibe.core.core;
 import inmath.linalg;
 import core.thread;
 import core.sync.mutex;
@@ -125,7 +126,7 @@ public:
 
         HTTPListener listener = listenHTTP(settings, router);
         while (!isCloseRequested) {
-            Thread.sleep(dur!"seconds"(1));
+            runEventLoopOnce();
         }
         listener.stopListening();
     }
