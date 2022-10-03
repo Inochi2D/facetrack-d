@@ -13,7 +13,7 @@ configuration "default" {
     targetType "library"
 }
 
-configuration "jml" {
-    versions "JML"
+configuration "web-adaptors" {
+    versions "JML" "WebHookAdaptor"
     dependency "vibe-d" version="~>0.9.4"
 }
