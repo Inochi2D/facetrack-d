@@ -6,14 +6,11 @@ import ft.data;
 import vibe.http.server;
 import vibe.http.router;
 import vibe.data.json;
+import vibe.core.sync;
 import core.thread;
 import core.sync.mutex;
-import core.time;
-import std.traits;
-import std.string;
 import std.conv;
 import std.exception : collectException;
-
 
 struct WebHookData {
     float[string] data;
@@ -62,8 +59,9 @@ private:
     ushort port = 8080;
     string bind = "0.0.0.0";
 
-    bool isCloseRequested;
     Thread receivingThread;
+    Mutex mutex;
+    TaskCondition condition;
 
     bool gotDataFromFetch = false;
 
@@ -100,7 +98,6 @@ public:
     }
 
     void receiveThread() {
-        isCloseRequested = false;
         tsdata = WebHookThreadSafeData(new Mutex());
 
         HTTPListener listener;
@@ -112,8 +109,8 @@ public:
         router.post("/blendshapes", &this.recvData);
 
         listener = listenHTTP(settings, router);
-        while (!isCloseRequested) {
-            Thread.sleep(dur!"seconds"(1));
+        synchronized (mutex) {
+            condition.wait();
         }
         listener.stopListening();
     }
@@ -135,6 +132,8 @@ public:
         if (isRunning) {
             this.stop();
         }
+        mutex = new Mutex;
+        condition = new TaskCondition(mutex);
         receivingThread = new Thread(&receiveThread);
         receivingThread.start();
     }
@@ -142,8 +141,10 @@ public:
     override
     void stop() {
         if (isRunning) {
-            isCloseRequested = true;
+            condition.notify();
             receivingThread.join();
+            mutex = null;
+            condition = null;
             receivingThread = null;
         }
     }

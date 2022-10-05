@@ -15,5 +15,5 @@ configuration "default" {
 
 configuration "web-adaptors" {
     versions "JML" "WebHookAdaptor"
-    dependency "vibe-d" version="~>0.9.4"
+    dependency "vibe-d:http" version="~>0.9.5"
 }

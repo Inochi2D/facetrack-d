@@ -3,14 +3,14 @@ version (JML) {
 import ft.adaptor;
 import ft.data;
 
-import vibe.d;
-import inmath.linalg;
+import vibe.http.websockets;
+import vibe.http.server;
+import vibe.http.router;
+import vibe.data.json;
+import vibe.core.sync;
 import core.thread;
 import core.sync.mutex;
-import std.traits;
-import std.string;
-import std.stdio:writeln, write, writefln;
-import std.json;
+import std.conv;
 
 
 struct JMLData {
@@ -60,10 +60,11 @@ class JMLAdaptor : Adaptor {
 private:
     ushort port = 23456;
     string bind = "0.0.0.0";
-    HTTPListener listener;
 
     bool isCloseRequested;
     Thread receivingThread;
+    Mutex mutex;
+    TaskCondition condition;
 
     int dataLossCounter;
     int sequenceNumber;
@@ -120,9 +121,9 @@ public:
         auto router = new URLRouter;
         router.get("/", handleWebSockets(&this.handleConnection));
 
-        listener = listenHTTP(settings, router);
-        while (!isCloseRequested) {
-            runEventLoopOnce();
+        HTTPListener listener = listenHTTP(settings, router);
+        synchronized (mutex) {
+            condition.wait();
         }
         listener.stopListening();
     }
@@ -141,9 +142,10 @@ public:
             if (addr_str !is null && addr_str != "")
                 bind = this.options["jml_bind_ip"];
         }
-        if (isRunning) {
-            this.stop();
-        }
+
+        this.stop();
+        mutex = new Mutex;
+        condition = new TaskCondition(mutex);
         receivingThread = new Thread(&receiveThread);
         receivingThread.start();
     }
@@ -152,8 +154,10 @@ public:
     void stop() {
         if (isRunning) {
             isCloseRequested = true;
-            listener.stopListening();
+            condition.notify();
             receivingThread.join();
+            mutex = null;
+            condition = null;
             receivingThread = null;
         }
     }
