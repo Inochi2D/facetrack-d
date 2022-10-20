@@ -317,7 +317,7 @@ public:
                             this.blendshapes[BlendshapeNames.ftEyeWidenRight] = this.blendshapes["eyeSquint_R"];
 
                             // MOUTH
-                            this.blendshapes[BlendshapeNames.ftMouthOpen] = this.blendshapes["jawOpen"]-this.blendshapes["mouthClose"];
+                            this.blendshapes[BlendshapeNames.ftMouthOpen] = this.blendshapes["jawOpen"];
                             this.blendshapes[BlendshapeNames.ftMouthX] = (1 + this.blendshapes["mouthLeft"]-this.blendshapes["mouthRight"]) / 2.0;
                             this.blendshapes[BlendshapeNames.ftMouthEmotion] = (
                                 clamp(
@@ -342,7 +342,7 @@ public:
                             this.blendshapes[BlendshapeNames.ftEyeWidenRight] = this.blendshapes["eyeSquintRight"];
 
                             // MOUTH
-                            this.blendshapes[BlendshapeNames.ftMouthOpen] = this.blendshapes["jawOpen"]-this.blendshapes["mouthClose"];
+                            this.blendshapes[BlendshapeNames.ftMouthOpen] = this.blendshapes["jawOpen"];
                             this.blendshapes[BlendshapeNames.ftMouthX] = (1 + this.blendshapes["mouthLeft"]-this.blendshapes["mouthRight"]) / 2.0;
                             this.blendshapes[BlendshapeNames.ftMouthEmotion] = (
                                 clamp(
