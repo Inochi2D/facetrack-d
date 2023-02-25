@@ -155,6 +155,7 @@ private:
     // Settings
     string appName = "facetrack-d";
     string phoneIP;
+    float pollingFactor = 1;
 
     // Sockets
     Socket vtsIn;
@@ -192,10 +193,11 @@ private:
     }
 
     void sendThread() {
-        VTSUDPDataRequest req = VTSUDPDataRequest(appName, vtsRequestDataFramesForSeconds, [vtsPort]);
-        string serializedDataReq = req.serializeToJson();
+        float clampedFactor = clamp(pollingFactor, 1, 5);
+        int senderThreadSleepTimeMs = clamp(cast(int)(1000.0 / (cast(float)vtsKeepAlivePerSecond*clampedFactor)), 10, 5000);
 
-        int senderThreadSleepTimeMs = clamp(1000 / vtsKeepAlivePerSecond, 10, 5000);
+        VTSUDPDataRequest req = VTSUDPDataRequest(appName, cast(float)vtsRequestDataFramesForSeconds/clampedFactor, [vtsPort]);
+        string serializedDataReq = req.serializeToJson();
         InternetAddress addr = new InternetAddress(phoneIP, vtsPort);
         while(!isCloseRequested) {
             try {
@@ -230,6 +232,14 @@ public:
         if ("phoneIP" in options) {
             phoneIP = options["phoneIP"];
         } else return;
+
+        if ("pollingFactor" in options) {
+            try {
+                pollingFactor = options["pollingFactor"].to!float;
+            } catch (Exception ex) {
+                return;
+            }
+        }
 
         // Do not create zombie threads please
         if (isRunning) this.stop();
@@ -419,7 +429,8 @@ public:
     string[] getOptionNames() {
         return [
             "phoneIP",
-            "appName"
+            "appName",
+            "pollingFactor"
         ];
     }
 }
