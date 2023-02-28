@@ -94,7 +94,7 @@ public:
         }
 
         tsdata.set(data);
-        res.writeVoidBody();
+        res.writeBody("");
     }
 
     void receiveThread() {
