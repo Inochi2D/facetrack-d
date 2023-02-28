@@ -146,19 +146,18 @@ public:
             mutex = null;
             condition = null;
             receivingThread = null;
+            gotDataFromFetch = false;
         }
     }
 
     override
     void poll() {
         if (tsdata.updated) {
-            gotDataFromFetch = true;
             WebHookData data = tsdata.get();
+            gotDataFromFetch = data.data.length > 0;
             foreach(string key, float value; data.data) {
                 blendshapes[key] = value;
             }
-        } else {
-            gotDataFromFetch = false;
         }
     }
 
