@@ -3,6 +3,8 @@ import ft.adaptor;
 public import ft.adaptors.vmc : VMCAdaptor;
 public import ft.adaptors.vtsproto : VTSAdaptor;
 public import ft.adaptors.openseeface : OSFAdaptor;
+public import ft.adaptors.ifacialmocap : IFMAdaptor;
+
 version (WebHookAdaptor){
     public import ft.adaptors.webhook : WebHookAdaptor;
 }
@@ -46,6 +48,7 @@ shared static this() {
     ftRegisterAdaptorFactory("VTubeStudio", () { return new VTSAdaptor(); });
     ftRegisterAdaptorFactory("OpenSeeFace", () { return new OSFAdaptor(); });
     ftRegisterAdaptorFactory("VMC Receiver", () { return new VMCAdaptor(); });
+    ftRegisterAdaptorFactory("iFacialMocap", () { return new IFMAdaptor(); });
     version (WebHookAdaptor){
         ftRegisterAdaptorFactory("Web Hook Receiver", () { return new WebHookAdaptor(); });
     }
