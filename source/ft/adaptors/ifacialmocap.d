@@ -328,8 +328,8 @@ public:
 
                             // Avg out the different ways of opening the mouth
                             (
-                                ((this.blendshapes["mouthLowerDown_L"]+this.blendshapes["mouthLowerDown_R"])/2) +
-                                ((this.blendshapes["mouthUpperUp_L"]+this.blendshapes["mouthUpperUp_R"])/2)
+                                ((this.blendshapes["mouthLowerDown_L"]+this.blendshapes["mouthUpperUp_L"])/2) +
+                                ((this.blendshapes["mouthLowerDown_R"]+this.blendshapes["mouthUpperUp_R"])/2)
                             ),
                             0,
                             1

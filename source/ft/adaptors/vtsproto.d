@@ -382,17 +382,16 @@ public:
                         this.blendshapes[BlendshapeNames.ftEyeWidenRight] = this.blendshapes["EyeWideRight"];
 
                         // MOUTH
-                        this.blendshapes[BlendshapeNames.ftMouthOpen] = (
+                        this.blendshapes[BlendshapeNames.ftMouthOpen] = clamp(
 
                             // Avg out the different ways of opening the mouth
                             (
-                                (this.blendshapes["JawOpen"]-this.blendshapes["MouthClose"]) +
-                                ((this.blendshapes["MouthLowerDownLeft"]+this.blendshapes["MouthLowerDownRight"])/2) +
-                                ((this.blendshapes["MouthUpperUpLeft"]+this.blendshapes["MouthUpperUpRight"])/2)
-                            )/3
-
-                          // Sensitivity gets kind of low so we adjust it here.
-                        )*2;
+                                ((this.blendshapes["MouthLowerDownLeft"]+this.blendshapes["MouthUpperUpLeft"])/2) +
+                                ((this.blendshapes["MouthLowerDownRight"]+this.blendshapes["MouthUpperUpRight"])/2)
+                            ),
+                            0,
+                            1
+                        );
 
                         this.blendshapes[BlendshapeNames.ftMouthX] = (1 + this.blendshapes["MouthLeft"]-this.blendshapes["MouthRight"]) / 2.0;
                         this.blendshapes[BlendshapeNames.ftMouthEmotion] = (
