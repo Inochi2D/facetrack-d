@@ -274,8 +274,8 @@ public:
             // Stop threads
             isCloseRequested = true;
             
-            sendingThread.join();
-            listeningThread.join();
+            sendingThread.join(false);
+            listeningThread.join(false);
 
             // Close UDP sockets
             vtsIn.close();

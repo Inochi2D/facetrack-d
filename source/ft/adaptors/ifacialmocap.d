@@ -270,7 +270,7 @@ public:
         if (isRunning) {
             // Stop threads
             isCloseRequested = true;
-            listeningThread.join();
+            listeningThread.join(false);
 
             // Close UDP sockets
             dataIn.close();

@@ -155,7 +155,7 @@ public:
         if (isRunning) {
             isCloseRequested = true;
             condition.notify();
-            receivingThread.join();
+            receivingThread.join(false);
             mutex = null;
             condition = null;
             receivingThread = null;

@@ -228,7 +228,7 @@ public:
         if (isRunning) {
             isCloseRequested = true;
             if (receivingThread !is null)
-                receivingThread.join();
+                receivingThread.join(false);
             osf.close();
 
             receivingThread = null;
