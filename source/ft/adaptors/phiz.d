@@ -14,6 +14,7 @@ import std.conv;
 import std.array;
 import inmath.linalg;
 import std.traits;
+import inmath.math;
 
 
 enum PhizBlendshapes {
@@ -300,6 +301,42 @@ public:
                 this.blendshapes[name] = data.data[i];
                 i++;
             }
+
+            // LEFT EYE
+            this.blendshapes[BlendshapeNames.ftEyeBlinkLeft] = this.blendshapes["eyeBlinkLeft"];
+            this.blendshapes[BlendshapeNames.ftEyeXLeft] = this.blendshapes["eyeLookOutLeft"]-this.blendshapes["eyeLookInLeft"];
+            this.blendshapes[BlendshapeNames.ftEyeYLeft] = this.blendshapes["eyeLookUpLeft"]-this.blendshapes["eyeLookDownLeft"];
+            this.blendshapes[BlendshapeNames.ftEyeSquintLeft] = this.blendshapes["eyeSquintLeft"];
+            this.blendshapes[BlendshapeNames.ftEyeWidenLeft] = this.blendshapes["eyeWideLeft"];
+
+            // RIGHT EYE
+            this.blendshapes[BlendshapeNames.ftEyeBlinkRight] = this.blendshapes["eyeBlinkRight"];
+            this.blendshapes[BlendshapeNames.ftEyeXRight] = this.blendshapes["eyeLookInRight"]-this.blendshapes["eyeLookOutRight"];
+            this.blendshapes[BlendshapeNames.ftEyeYRight] = this.blendshapes["eyeLookUpRight"]-this.blendshapes["eyeLookDownRight"];
+            this.blendshapes[BlendshapeNames.ftEyeSquintRight] = this.blendshapes["eyeSquintRight"];
+            this.blendshapes[BlendshapeNames.ftEyeWidenRight] = this.blendshapes["eyeWideRight"];
+
+            // MOUTH
+            this.blendshapes[BlendshapeNames.ftMouthOpen] = clamp(
+
+                // Avg out the different ways of opening the mouth
+                (
+                    ((this.blendshapes["mouthLowerDownLeft"]+this.blendshapes["mouthUpperUpLeft"])/2) +
+                    ((this.blendshapes["mouthLowerDownRight"]+this.blendshapes["mouthUpperUpRight"])/2)
+                ),
+                0,
+                1
+            );
+
+            this.blendshapes[BlendshapeNames.ftMouthX] = (1 + this.blendshapes["mouthLeft"]-this.blendshapes["mouthRight"]) / 2.0;
+            this.blendshapes[BlendshapeNames.ftMouthEmotion] = (
+                    clamp(
+                        1 +
+                            (this.blendshapes["mouthSmileLeft"]+this.blendshapes["mouthSmileRight"]/2.0) -
+                            (this.blendshapes["mouthFrownLeft"]+this.blendshapes["mouthFrownRight"]/2.0),
+                        0, 2
+                    )
+                ) / 2.0;
         }
 
         if(tshead.updated) {
