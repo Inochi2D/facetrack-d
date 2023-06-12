@@ -1,7 +1,7 @@
 module ft.adaptors;
 import ft.adaptor;
 public import ft.adaptors.vmc : VMCAdaptor;
-public import ft.adaptors.phiz : PhizAdaptor;
+public import ft.adaptors.phizosc : PhizOSCAdaptor;
 public import ft.adaptors.vtsproto : VTSAdaptor;
 public import ft.adaptors.openseeface : OSFAdaptor;
 public import ft.adaptors.ifacialmocap : IFMAdaptor;
@@ -50,7 +50,7 @@ shared static this() {
     ftRegisterAdaptorFactory("VTubeStudio", () { return new VTSAdaptor(); });
     ftRegisterAdaptorFactory("OpenSeeFace", () { return new OSFAdaptor(); });
     ftRegisterAdaptorFactory("VMC Receiver", () { return new VMCAdaptor(); });
-    ftRegisterAdaptorFactory("Phiz Receiver", () { return new PhizAdaptor(); });
+    ftRegisterAdaptorFactory("Phiz OSC Receiver", () { return new PhizOSCAdaptor(); });
     ftRegisterAdaptorFactory("iFacialMocap", () { return new IFMAdaptor(); });
     ftRegisterAdaptorFactory("LiveLinkFace/MeFaMo Receiver", () { return new LLFAdaptor(); });
     version (WebHookAdaptor){

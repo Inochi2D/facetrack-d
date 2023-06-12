@@ -1,4 +1,4 @@
-module ft.adaptors.phiz;
+module ft.adaptors.phizosc;
 import ft.adaptor;
 import ft.data;
 
@@ -8,7 +8,7 @@ import std.socket;
 import inmath.linalg;
 import std.traits;
 
-enum PhizBlendshapes {
+enum PhizOSCBlendshapes {
     browInnerUp = "browInnerUp",
     browDownLeft = "browDownLeft",
     browDownRight = "browDownRight",
@@ -63,7 +63,7 @@ enum PhizBlendshapes {
     tongueOut = "tongueOut"
 }
 
-class PhizAdaptor : Adaptor {
+class PhizOSCAdaptor : Adaptor {
 private:
     Server server;
     ushort port = 41235;
@@ -75,7 +75,7 @@ public:
 
     override 
     string getAdaptorName() {
-        return "Phiz Receiver";
+        return "Phiz OSC Receiver";
     }
 
     override
@@ -164,7 +164,7 @@ public:
                         break;
                     case "/blendshapes":
                         int i = 0;
-                        foreach(name; EnumMembers!PhizBlendshapes) {
+                        foreach(name; EnumMembers!PhizOSCBlendshapes) {
                             this.blendshapes[name] = msg.arg!float(i);
                             i++;
                         }
