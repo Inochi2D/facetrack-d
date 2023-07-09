@@ -61,30 +61,86 @@ public:
                 if (msg.addressPattern[0].toString != "/VMC" && msg.addressPattern[1].toString != "/Ext") continue;
                 switch(msg.addressPattern[2].toString) {
                     case "/Bone":
-                        if (msg.arg!string(0) !in bones) {
-                            bones[msg.arg!string(0)] = Bone(
-                                vec3.init,
-                                quat.identity
+                        if (msg.addressPattern.length > 3) {
+                            
+                            string pattern = msg.addressPattern[3].toString();
+                            if (pattern.length > 1) {
+                                
+                                // Early escape for invalid bone seq length
+                                if (msg.typeTags.length != 5) break;
+                                
+                                string boneName = pattern[$..1];
+                                this.bones[boneName].position = vec3(
+                                    msg.arg!float(0),
+                                    msg.arg!float(1),
+                                    msg.arg!float(2)
+                                );
+                                
+                                // NOTE: the bones quaternion is modified here to match the output of the VTS Protocol
+                                this.bones[boneName].rotation = quat(
+                                    msg.arg!float(6), 
+                                    -msg.arg!float(5), 
+                                    msg.arg!float(3), 
+                                    -msg.arg!float(4), 
+                                );
+                            }
+                            
+
+                        } else {
+
+                            // Early escape for invalid bone seq length
+                            if (msg.typeTags.length != 6) break;
+
+                            string boneName = msg.arg!string(0);
+                            if (boneName !in bones) {
+                                bones[boneName] = Bone(
+                                    vec3.init,
+                                    quat.identity
+                                );
+                            }
+
+                            this.bones[boneName].position = vec3(
+                                msg.arg!float(1),
+                                msg.arg!float(2),
+                                msg.arg!float(3)
+                            );
+                            
+                            // NOTE: the bones quaternion is modified here to match the output of the VTS Protocol
+                            this.bones[boneName].rotation = quat(
+                                msg.arg!float(7), 
+                                -msg.arg!float(6), 
+                                msg.arg!float(4), 
+                                -msg.arg!float(5), 
                             );
                         }
-
-                        this.bones[msg.arg!string(0)].position = vec3(
-                            msg.arg!float(1),
-                            msg.arg!float(2),
-                            msg.arg!float(3)
-                        );
-                        
-                        // NOTE: the bones quaternion is modified here to match the output of the VTS Protocol
-                        this.bones[msg.arg!string(0)].rotation = quat(
-                            msg.arg!float(7), 
-                            -msg.arg!float(6), 
-                            msg.arg!float(4), 
-                            -msg.arg!float(5), 
-                        );
                         break;
                     case "/Blend":
-                        if (msg.addressPattern[3].toString == "/Apply") break;
-                        this.blendshapes[msg.arg!string(0)] = msg.arg!float(1);
+                        if (msg.addressPattern.length > 3) {
+                            string pattern = msg.addressPattern[3].toString();
+                            switch (pattern) {
+                                
+                                // We don't use /Apply, so we just break out.
+                                case "/Apply": break;
+                                
+                                case "/Val":
+
+                                    // Value apply
+                                    this.blendshapes[msg.arg!string(0)] = msg.arg!float(1);
+                                    break;
+
+                                default:
+
+                                    // Avoid invalid string if name is an empty "/"".
+                                    if (pattern.length > 1) {
+
+                                        // Extension; for bones addressed via the pattern we need to handle it appropriately.
+                                        this.blendshapes[pattern[1..$]] = msg.arg!float(0);
+                                    }
+                                    break;
+                            }
+                        } else {
+                            this.blendshapes[msg.arg!string(0)] = msg.arg!float(1);
+                        }
                         break;
                     default: break;
                 }
