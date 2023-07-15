@@ -126,23 +126,32 @@ public:
                                 case "/Apply": break;
                                 
                                 case "/Val":
-
-                                    // Value apply
-                                    this.blendshapes[msg.arg!string(0)] = msg.arg!float(1);
+                                    // msg form: /VMC/Ext/Blend/Val  = [<Name>, float]
+                                    // Expected VMC protocol case
+                                    if (msg.typeTags.length == 2) {
+                                        if(msg.arg!string(0).length > 0){
+                                            this.blendshapes[msg.arg!string(0)] = msg.arg!float(1);
+                                        }
+                                    }
                                     break;
 
                                 default:
-
+                                    // msg form: /VMC/Ext/Blend/<Name> = [float]
                                     // Avoid invalid string if name is an empty "/"".
                                     if (pattern.length > 1) {
 
                                         // Extension; for bones addressed via the pattern we need to handle it appropriately.
+                                        if (msg.typeTags.length != 1) break;
                                         this.blendshapes[pattern[1..$]] = msg.arg!float(0);
                                     }
                                     break;
                             }
                         } else {
-                            this.blendshapes[msg.arg!string(0)] = msg.arg!float(1);
+                            // msg form: /VMC/Ext/Blend  = [<Name>, float]
+                            if (msg.typeTags.length != 2) break;
+                            if(msg.arg!string(0).length > 0){
+                                this.blendshapes[msg.arg!string(0)] = msg.arg!float(1);
+                            }
                         }
                         break;
                     default: break;
