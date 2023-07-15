@@ -133,18 +133,19 @@ public:
                                             this.blendshapes[msg.arg!string(0)] = msg.arg!float(1);
                                         }
                                     }
-                                    break;
-
-                                default:
-                                    // msg form: /VMC/Ext/Blend/<Name> = [float]
-                                    // Avoid invalid string if name is an empty "/"".
-                                    if (pattern.length > 1) {
-
-                                        // Extension; for bones addressed via the pattern we need to handle it appropriately.
-                                        if (msg.typeTags.length != 1) break;
-                                        this.blendshapes[pattern[1..$]] = msg.arg!float(0);
+                                    // msg form: /VMC/Ext/Blend/Val/<Name> = [float]
+                                    else if (msg.typeTags.length == 1) {
+                                        if (msg.addressPattern.length != 4 break;
+                                        pattern = msg.addressPattern[4].toString();
+                                        // Avoid invalid string if name is an empty "/"".
+                                        if (pattern.length > 1) {
+                                            // Extension; for bones addressed via the pattern we need to handle it appropriately.
+                                            this.blendshapes[pattern[1..$]] = msg.arg!float(0);
+                                        }
                                     }
+
                                     break;
+                                default: break;
                             }
                         } else {
                             // msg form: /VMC/Ext/Blend  = [<Name>, float]
