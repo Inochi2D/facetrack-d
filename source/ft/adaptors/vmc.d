@@ -147,12 +147,6 @@ public:
                                     break;
                                 default: break;
                             }
-                        } else {
-                            // msg form: /VMC/Ext/Blend  = [<Name>, float]
-                            if (msg.typeTags.length != 2) break;
-                            if(msg.arg!string(0).length > 0){
-                                this.blendshapes[msg.arg!string(0)] = msg.arg!float(1);
-                            }
                         }
                         break;
                     default: break;
