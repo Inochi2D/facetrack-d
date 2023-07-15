@@ -61,13 +61,16 @@ public:
                 if (msg.addressPattern[0].toString != "/VMC" && msg.addressPattern[1].toString != "/Ext") continue;
                 switch(msg.addressPattern[2].toString) {
                     case "/Bone":
-                        if (msg.addressPattern.length > 3) {
-                            
-                            string pattern = msg.addressPattern[3].toString();
+                        if (msg.addressPattern.length < 4) break;
+                        if (msg.addressPattern[3].toString != "/Pos") break;
+                        // msg form: /VMC/Ext/Bone/Pos/<Name> = [float x 7]
+                        if (msg.addressPattern.length > 4) {
+    
+                            string pattern = msg.addressPattern[4].toString();
                             if (pattern.length > 1) {
                                 
                                 // Early escape for invalid bone seq length
-                                if (msg.typeTags.length != 5) break;
+                                if (msg.typeTags.length != 7) break;
                                 
                                 string boneName = pattern[$..1];
                                 this.bones[boneName].position = vec3(
@@ -84,12 +87,12 @@ public:
                                     -msg.arg!float(4), 
                                 );
                             }
-                            
 
+                        // msg form: /VMC/Ext/Bone/Pos = [<Name>, float x 7]
                         } else {
 
                             // Early escape for invalid bone seq length
-                            if (msg.typeTags.length != 6) break;
+                            if (msg.typeTags.length != 8) break;
 
                             string boneName = msg.arg!string(0);
                             if (boneName !in bones) {
@@ -123,23 +126,27 @@ public:
                                 case "/Apply": break;
                                 
                                 case "/Val":
-
-                                    // Value apply
-                                    this.blendshapes[msg.arg!string(0)] = msg.arg!float(1);
-                                    break;
-
-                                default:
-
-                                    // Avoid invalid string if name is an empty "/"".
-                                    if (pattern.length > 1) {
-
-                                        // Extension; for bones addressed via the pattern we need to handle it appropriately.
-                                        this.blendshapes[pattern[1..$]] = msg.arg!float(0);
+                                    // msg form: /VMC/Ext/Blend/Val  = [<Name>, float]
+                                    // Expected VMC protocol case
+                                    if (msg.typeTags.length == 2) {
+                                        if(msg.arg!string(0).length > 0){
+                                            this.blendshapes[msg.arg!string(0)] = msg.arg!float(1);
+                                        }
                                     }
+                                    // msg form: /VMC/Ext/Blend/Val/<Name> = [float]
+                                    else if (msg.typeTags.length == 1) {
+                                        if (msg.addressPattern.length != 4 break;
+                                        pattern = msg.addressPattern[4].toString();
+                                        // Avoid invalid string if name is an empty "/"".
+                                        if (pattern.length > 1) {
+                                            // Extension; for bones addressed via the pattern we need to handle it appropriately.
+                                            this.blendshapes[pattern[1..$]] = msg.arg!float(0);
+                                        }
+                                    }
+
                                     break;
+                                default: break;
                             }
-                        } else {
-                            this.blendshapes[msg.arg!string(0)] = msg.arg!float(1);
                         }
                         break;
                     default: break;
