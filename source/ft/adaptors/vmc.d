@@ -135,7 +135,7 @@ public:
                                     }
                                     // msg form: /VMC/Ext/Blend/Val/<Name> = [float]
                                     else if (msg.typeTags.length == 1) {
-                                        if (msg.addressPattern.length != 4 break;
+                                        if (msg.addressPattern.length != 4) break;
                                         pattern = msg.addressPattern[4].toString();
                                         // Avoid invalid string if name is an empty "/"".
                                         if (pattern.length > 1) {
