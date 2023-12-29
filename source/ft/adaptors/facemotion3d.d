@@ -167,7 +167,8 @@ public:
 class FM3DAdaptor : Adaptor {
 private:
     // Constant enums
-    enum fm3dPort = 49993;
+    enum fm3dSendPort = 49993;
+    enum fm3dListenPort = 49983;
     enum fm3dPollRate = 8;
     
     // Data
@@ -189,7 +190,7 @@ private:
 
     void listenThread() {
         ubyte[ushort.max] buff;
-        Address addr = new InternetAddress(InternetAddress.ADDR_ANY, fm3dPort);
+        Address addr = new InternetAddress(InternetAddress.ADDR_ANY, fm3dListenPort);
         
         int failed = 0;
         while (!isCloseRequested) {
@@ -201,7 +202,7 @@ private:
                     auto trackingData = FM3DTrackingData(recvString);
                     failed = 0;
                     tsdata.set(trackingData);
-                }
+                } 
                 Thread.sleep(fm3dPollRate.msecs);
             } catch (Exception ex) {
                 writeln(ex.msg);
@@ -211,7 +212,7 @@ private:
                 if (failed > 100) {
 
                     // try connecting again
-                    sender.sendTo("FACEMOTION3D_OtherStreaming", SocketFlags.NONE, new InternetAddress(phoneIP, fm3dPort));
+                    sender.sendTo("FACEMOTION3D_OtherStreaming", SocketFlags.NONE, new InternetAddress(phoneIP, fm3dSendPort));
                     Thread.sleep(1.seconds);
                     failed = 0;
                     dataLossCounter = RECV_TIMEOUT;
@@ -244,11 +245,11 @@ public:
 
         try {
             sender = new UdpSocket();
-            sender.sendTo("FACEMOTION3D_OtherStreaming", SocketFlags.NONE, new InternetAddress(phoneIP, fm3dPort)); 
+            sender.sendTo("FACEMOTION3D_OtherStreaming", SocketFlags.NONE, new InternetAddress(phoneIP, fm3dSendPort)); 
             
             dataIn = new UdpSocket();
             dataIn.setOption(SocketOptionLevel.SOCKET, SocketOption.RCVTIMEO, 5.msecs);
-            dataIn.bind(new InternetAddress("0.0.0.0", fm3dPort));
+            dataIn.bind(new InternetAddress("0.0.0.0", fm3dListenPort));
         } catch (Exception ex) {
             dataIn.close();
             dataIn = null;
@@ -310,26 +311,26 @@ public:
 
             try {
                 if (this.blendshapes.length > 0) {
-                    this.blendshapes[BlendshapeNames.ftEyeBlinkLeft] = this.blendshapes["eyeBlink_L"];
-                    this.blendshapes[BlendshapeNames.ftEyeXLeft] = this.blendshapes["eyeLookOut_L"]-this.blendshapes["eyeLookIn_L"];
-                    this.blendshapes[BlendshapeNames.ftEyeYLeft] = this.blendshapes["eyeLookUp_L"]-this.blendshapes["eyeLookDown_L"];
-                    this.blendshapes[BlendshapeNames.ftEyeSquintLeft] = this.blendshapes["eyeSquint_L"];
-                    this.blendshapes[BlendshapeNames.ftEyeWidenLeft] = this.blendshapes["eyeWide_L"];
+                    this.blendshapes[BlendshapeNames.ftEyeBlinkLeft] = this.blendshapes["eyeBlinkLeft"];
+                    this.blendshapes[BlendshapeNames.ftEyeXLeft] = this.blendshapes["eyeLookOutLeft"]-this.blendshapes["eyeLookInLeft"];
+                    this.blendshapes[BlendshapeNames.ftEyeYLeft] = this.blendshapes["eyeLookUpLeft"]-this.blendshapes["eyeLookDownLeft"];
+                    this.blendshapes[BlendshapeNames.ftEyeSquintLeft] = this.blendshapes["eyeSquintLeft"];
+                    this.blendshapes[BlendshapeNames.ftEyeWidenLeft] = this.blendshapes["eyeWideLeft"];
 
                     // RIGHT EYE
-                    this.blendshapes[BlendshapeNames.ftEyeBlinkRight] = this.blendshapes["eyeBlink_R"];
-                    this.blendshapes[BlendshapeNames.ftEyeXRight] = this.blendshapes["eyeLookIn_R"]-this.blendshapes["eyeLookOut_R"];
-                    this.blendshapes[BlendshapeNames.ftEyeYRight] = this.blendshapes["eyeLookUp_R"]-this.blendshapes["eyeLookDown_R"];
-                    this.blendshapes[BlendshapeNames.ftEyeSquintRight] = this.blendshapes["eyeSquint_R"];
-                    this.blendshapes[BlendshapeNames.ftEyeWidenRight] = this.blendshapes["eyeWide_R"];
+                    this.blendshapes[BlendshapeNames.ftEyeBlinkRight] = this.blendshapes["eyeBlinkRight"];
+                    this.blendshapes[BlendshapeNames.ftEyeXRight] = this.blendshapes["eyeLookInRight"]-this.blendshapes["eyeLookOutRight"];
+                    this.blendshapes[BlendshapeNames.ftEyeYRight] = this.blendshapes["eyeLookUpRight"]-this.blendshapes["eyeLookDownRight"];
+                    this.blendshapes[BlendshapeNames.ftEyeSquintRight] = this.blendshapes["eyeSquintRight"];
+                    this.blendshapes[BlendshapeNames.ftEyeWidenRight] = this.blendshapes["eyeWideRight"];
 
                     // MOUTH
                     this.blendshapes[BlendshapeNames.ftMouthOpen] = clamp(
 
                             // Avg out the different ways of opening the mouth
                             (
-                                ((this.blendshapes["mouthLowerDown_L"]+this.blendshapes["mouthUpperUp_L"])/2) +
-                                ((this.blendshapes["mouthLowerDown_R"]+this.blendshapes["mouthUpperUp_R"])/2)
+                                ((this.blendshapes["mouthLowerDownLeft"]+this.blendshapes["mouthUpperUpLeft"])/2) +
+                                ((this.blendshapes["mouthLowerDownRight"]+this.blendshapes["mouthUpperUpRight"])/2)
                             ),
                             0,
                             1
@@ -338,8 +339,8 @@ public:
                     this.blendshapes[BlendshapeNames.ftMouthEmotion] = (
                         clamp(
                             1 +
-                                (this.blendshapes["mouthSmile_L"]+this.blendshapes["mouthSmile_R"]/2.0) -
-                                (this.blendshapes["mouthFrown_L"]+this.blendshapes["mouthFrown_R"]/2.0),
+                                (this.blendshapes["mouthSmileLeft"]+this.blendshapes["mouthSmileRight"]/2.0) -
+                                (this.blendshapes["mouthFrownLeft"]+this.blendshapes["mouthFrownRight"]/2.0),
                             0, 2
                         )
                     ) / 2.0;
