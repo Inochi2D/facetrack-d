@@ -15,6 +15,7 @@ A library for interfacing with face tracking systems.
  - J!NS MEME Logger
  - Webhooks
  - iFacialMocap
+ - Facemotion3D
  - LiveLinkFace/MeFaMo
 
 ## Adaptors to be supported

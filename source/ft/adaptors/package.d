@@ -5,6 +5,7 @@ public import ft.adaptors.phizosc : PhizOSCAdaptor;
 public import ft.adaptors.vtsproto : VTSAdaptor;
 public import ft.adaptors.openseeface : OSFAdaptor;
 public import ft.adaptors.ifacialmocap : IFMAdaptor;
+public import ft.adaptors.facemotion3d : FM3DAdaptor;
 public import ft.adaptors.llf : LLFAdaptor;
 
 version (WebHookAdaptor){
@@ -55,6 +56,7 @@ shared static this() {
     ftRegisterAdaptorFactory("VMC Receiver", () { return new VMCAdaptor(); });
     ftRegisterAdaptorFactory("Phiz OSC Receiver", () { return new PhizOSCAdaptor(); });
     ftRegisterAdaptorFactory("iFacialMocap", () { return new IFMAdaptor(); });
+    ftRegisterAdaptorFactory("Facemotion3D", () { return new FM3DAdaptor(); });
     ftRegisterAdaptorFactory("LiveLinkFace/MeFaMo Receiver", () { return new LLFAdaptor(); });
     version (Phiz){
         ftRegisterAdaptorFactory("Phiz Receiver", () { return new PhizAdaptor(); });
