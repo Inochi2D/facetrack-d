@@ -169,6 +169,7 @@ private:
     // Constant enums
     enum ifmPort = 49983;
     enum ifmPollRate = 8;
+    enum magicString = "iFacialMocap_sahuasouryya9218sauhuiayeta91555dy3719";
     
     // Data
     size_t dataPacketsReceivedTotal;
@@ -211,7 +212,8 @@ private:
                 if (failed > 100) {
 
                     // try connecting again
-                    sender.sendTo("iFacialMocap_sahuasouryya9218sauhuiayeta91555dy3719", SocketFlags.NONE, new InternetAddress(phoneIP, ifmPort)); // Nani the fuck, if I may ask?
+                    auto addrPort = new InternetAddress(phoneIP, ifmPort);
+                    sender.sendTo(magicString, SocketFlags.NONE, addrPort); // Nani the fuck, if I may ask?
                     Thread.sleep(1.seconds);
                     failed = 0;
                     dataLossCounter = RECV_TIMEOUT;
@@ -234,6 +236,9 @@ public:
     void start() {
         if ("phoneIP" in options) {
             phoneIP = options["phoneIP"];
+            import std.socket : parseAddress;
+            // Allow Throw exception, prevnt hard crash
+            parseAddress(phoneIP);
         } else return;
 
         if (isRunning) this.stop();
@@ -244,7 +249,8 @@ public:
 
         try {
             sender = new UdpSocket();
-            sender.sendTo("iFacialMocap_sahuasouryya9218sauhuiayeta91555dy3719", SocketFlags.NONE, new InternetAddress(phoneIP, ifmPort)); // Nani the fuck, if I may ask?
+            auto addrPort = new InternetAddress(phoneIP, ifmPort);
+            sender.sendTo(magicString, SocketFlags.NONE, addrPort); // Nani the fuck, if I may ask?
             
             dataIn = new UdpSocket();
             dataIn.setOption(SocketOptionLevel.SOCKET, SocketOption.RCVTIMEO, 5.msecs);
